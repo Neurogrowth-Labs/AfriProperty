@@ -1,0 +1,96 @@
+
+import React from 'react';
+import { CheckBadgeIcon, CpuChipIcon } from '../../icons/ActionIcons';
+
+const plans = [
+    {
+        name: 'Essential',
+        price: 'Free',
+        priceDetail: 'for your first listing',
+        features: ['1 Active Listing', '30-day visibility', 'Up to 10 photos', 'Standard support'],
+        cta: 'Your Current Plan',
+        isCurrent: true,
+    },
+    {
+        name: 'Pay-per-Lead',
+        price: '$25',
+        priceDetail: '/ confirmed lead',
+        features: ['List for Free', 'Pay only for inquiries', 'Unlimited Photos', 'AI Description Writer'],
+        cta: 'Upgrade Plan',
+        isCurrent: false,
+    },
+    {
+        name: 'Growth',
+        price: '$149',
+        priceDetail: '/ month',
+        features: ['Unlimited Listings', '10 Free Leads/month', 'Featured Placement', 'Full AI Agent Suite'],
+        cta: 'Upgrade Plan',
+        isCurrent: false,
+    },
+    {
+        name: 'Brokerage',
+        price: 'Contact Us',
+        priceDetail: 'for custom solutions',
+        features: ['Everything in Growth', 'Team Management', 'Custom Branding', 'Dedicated Support'],
+        cta: 'Contact Sales',
+        isCurrent: false,
+    }
+];
+
+const AgentBilling: React.FC = () => {
+  return (
+    <div className="p-8 space-y-8">
+      <div>
+        <h2 className="text-3xl font-bold text-slate-800 dark:text-white">Subscription & Billing</h2>
+        <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your plan, purchase credits, and view your billing history.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm">
+            <h3 className="font-semibold text-lg text-slate-800 dark:text-white">Current Plan</h3>
+            <p className="text-4xl font-bold text-brand-primary mt-2">Essential</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Your plan renews on November 27, 2023.</p>
+        </div>
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm">
+            <h3 className="font-semibold text-lg text-slate-800 dark:text-white">Listing Credits</h3>
+            <p className="text-4xl font-bold text-brand-primary mt-2">1 / 1</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Used this billing cycle.</p>
+            <button className="mt-3 text-sm font-semibold bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90">
+                Buy More Credits
+            </button>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-4">Available Plans</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+            {plans.map((plan, index) => (
+                <div key={index} className={`border rounded-lg p-6 flex flex-col ${plan.isCurrent ? 'border-brand-primary border-2 bg-brand-light dark:bg-slate-800/50' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'}`}>
+                    <h3 className="text-xl font-bold text-brand-dark dark:text-white text-center">{plan.name}</h3>
+                    <div className="text-center my-6">
+                        <span className="text-4xl font-extrabold text-brand-dark dark:text-white">{plan.price}</span>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm h-10">{plan.priceDetail}</p>
+                    </div>
+                    <ul className="space-y-3 mb-8 flex-grow">
+                        {plan.features.map((feature, fIndex) => (
+                            <li key={fIndex} className="flex items-start">
+                                {feature.includes('AI') ? 
+                                    <CpuChipIcon className="w-5 h-5 text-brand-primary mr-2 flex-shrink-0 mt-0.5" /> : 
+                                    <CheckBadgeIcon className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                                }
+                                <span className="text-slate-600 dark:text-slate-300 text-sm">{feature}</span>
+                            </li>
+                        ))}
+                    </ul>
+                    <button disabled={plan.isCurrent} className={`w-full py-3 rounded-lg font-semibold transition-colors ${plan.isCurrent ? 'bg-slate-200 text-slate-500 cursor-not-allowed dark:bg-slate-700 dark:text-slate-400' : 'bg-brand-primary text-white hover:bg-opacity-90'}`}>
+                        {plan.cta}
+                    </button>
+                </div>
+            ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AgentBilling;
