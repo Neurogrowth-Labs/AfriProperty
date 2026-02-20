@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AfriProperty - Real Estate Marketplace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Plus Jakarta Sans', 'sans-serif'],
+            },
+            fontSize: {
+              // Custom, smaller scale for a professional/enterprise look
+              'xs': ['0.75rem', { lineHeight: '1rem' }],     // 12px
+              'sm': ['0.8125rem', { lineHeight: '1.25rem' }], // 13px
+              'base': ['0.9375rem', { lineHeight: '1.5rem' }], // 15px
+              'lg': ['1.0625rem', { lineHeight: '1.75rem' }],  // 17px
+              'xl': ['1.125rem', { lineHeight: '1.75rem' }],   // 18px
+              '2xl': ['1.375rem', { lineHeight: '2rem' }],     // 22px
+              '3xl': ['1.75rem', { lineHeight: '2.25rem' }],    // 28px
+              '4xl': ['2.25rem', { lineHeight: '2.5rem' }],     // 36px
+              '5xl': ['3rem', { lineHeight: '3rem' }],          // 48px
+            },
+            colors: {
+              // Strict Blue & White / Slate Palette
+              'brand-primary': '#0f53ff', // Modern Royal Blue
+              'brand-secondary': '#1e3a8a', // Dark Navy
+              'brand-accent': '#60a5fa', // Sky Blue
+              'brand-gold': '#0f53ff', // Remapped to Blue to enforce 2-color rule
+              'brand-light': '#eff6ff', // Slate-50 equivalent
+              'brand-dark': '#0f172a', // Slate-900 (Rich dark background)
+              
+              // Remap utility colors to fit the theme
+              'slate': {
+                50: '#f8fafc',
+                100: '#f1f5f9',
+                200: '#e2e8f0',
+                300: '#cbd5e1',
+                400: '#94a3b8',
+                500: '#64748b',
+                600: '#475569',
+                700: '#334155',
+                800: '#1e293b',
+                900: '#0f172a',
+              },
+              'blue': {
+                 50: '#eff6ff',
+                 100: '#dbeafe',
+                 500: '#3b82f6',
+                 600: '#2563eb', // Standard primary
+                 700: '#1d4ed8',
+              },
+              // Enforce Blue theme mapping
+              amber: { 400: '#3b82f6', 500: '#2563eb' }, 
+              yellow: { 100: '#dbeafe', 800: '#1e40af' },
+            },
+            spacing: {
+              '1': '4px',
+              '2': '8px',
+              '3': '12px', // Compacted from 16px
+              '4': '16px', // Compacted from 24px
+              '5': '24px', // Compacted from 32px
+              '6': '32px', // Compacted from 48px
+            },
+            container: {
+              center: true,
+              padding: '1.5rem',
+              screens: {
+                sm: '640px',
+                md: '768px',
+                lg: '1024px',
+                xl: '1200px', // Restrict max width for better readability
+              },
+            },
+            boxShadow: {
+              'sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+              'DEFAULT': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+              'md': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+              'lg': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+            }
+          },
+        },
+      }
+    </script>
+    <style type="text/tailwindcss">
+      @layer base {
+        html {
+            font-size: 15px; /* Set lower base size */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        h1, h2, h3, h4, h5, h6 {
+          @apply font-heading tracking-tight text-slate-900 dark:text-white;
+        }
+        body {
+          @apply font-sans text-slate-600 dark:text-slate-300 bg-white dark:bg-brand-dark leading-relaxed;
+        }
+        .mono-text {
+          @apply font-mono;
+        }
+        /* Refine inputs */
+        input, select, textarea {
+            @apply text-sm rounded-md border-slate-300 shadow-sm focus:border-brand-primary focus:ring-brand-primary;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.17.0/",
+    "@heroicons/react/": "https://aistudiocdn.com/@heroicons/react@^2.2.0/",
+    "@google-ai/generativelanguage": "https://aistudiocdn.com/@google-ai/generativelanguage@^3.4.0",
+    "react-markdown": "https://esm.sh/react-markdown@9",
+    "rehype-raw": "https://esm.sh/rehype-raw@7",
+    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="antialiased">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
