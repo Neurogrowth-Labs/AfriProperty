@@ -1,22 +1,24 @@
 
 import React, { useState } from 'react';
-import type { Property, TourRequest, User, Message, CalendarEvent, AgentProfile, Review, Lead, Achievement, InvestmentRequest } from '../../types';
+import type { Property, TourRequest, User, Message, CalendarEvent, AgentProfile, Review, Lead, Achievement, InvestmentRequest } from '../../../types';
 import AgentDashboardHome from './agent/AgentDashboardHome';
 import AgentListingsManagement from './agent/AgentListingsManagement';
 import AgentCalendar from './agent/AgentCalendar';
-import { AgentAnalytics } from './agent/AgentAnalytics';
+// FIX: Corrected import path. AgentAnalytics is in the same directory, not the 'agent/' subfolder.
+import { AgentAnalytics } from './AgentAnalytics';
 import AgentProfilePage from './agent/AgentProfilePage';
 import AgentSupportPage from './agent/AgentSupportPage';
 import AgentLeadsManagement from './agent/AgentLeadsManagement';
 import AgentAITools from './agent/AgentAITools';
 import AgentTeamHub from './agent/AgentTeamHub';
-import { DashboardIcon, ListingsIcon, LeadsIcon, AnalyticsIcon, CalendarIcon as NavCalendarIcon, ProfileIcon, SupportIcon, SparklesIcon, HandshakeIcon, BanknotesIcon, CreditCardIcon } from '../icons/AgentDashboardIcons';
+import { DashboardIcon, ListingsIcon, LeadsIcon, AnalyticsIcon, CalendarIcon as NavCalendarIcon, ProfileIcon, SupportIcon, SparklesIcon, HandshakeIcon, BanknotesIcon, CreditCardIcon } from '../../icons/AgentDashboardIcons';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import AgentInvestmentRequests from './agent/AgentInvestmentRequests';
 import AgentEarnings from './agent/AgentEarnings';
 import AgentBilling from './agent/AgentBilling';
-import { ChatBubbleLeftRightIcon } from '../icons/ActionIcons';
-import AgentMessages from './agent/AgentMessages';
+import { ChatBubbleLeftRightIcon } from '../../icons/ActionIcons';
+// FIX: Corrected import path. AgentMessages is in the same directory, not the 'agent/' subfolder.
+import AgentMessages from './AgentMessages';
 
 
 interface AgentDashboardProps {
@@ -40,6 +42,7 @@ interface AgentDashboardProps {
   onOpenAIImprovementModal: (property: Property) => void;
   onUpdateAgentProfile: (profile: AgentProfile) => void;
   onUpdateAchievements: (achievements: Achievement[]) => void;
+  // Added onSendMessage to props
   onSendMessage: (messageData: Omit<Message, 'id' | 'timestamp'>) => Promise<void>;
 }
 
@@ -126,6 +129,7 @@ const AgentDashboard: React.FC<AgentDashboardProps> = (props) => {
             case 'leads':
                 return <AgentLeadsManagement {...props} />;
             case 'messages':
+                // FIX: Pass onSendMessage to AgentMessages
                 return <AgentMessages user={props.user} messages={props.messages} onSendMessage={props.onSendMessage} />;
             case 'aiTools':
                 return <AgentAITools />;
