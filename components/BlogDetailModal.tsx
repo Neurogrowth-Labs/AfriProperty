@@ -3,8 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { BlogPost } from '../types';
 import { CloseIcon } from './icons/NavIcons';
 import { EnvelopeIcon, SpeakerWaveIcon, PauseIcon } from './icons/ActionIcons';
-import ReactMarkdown from 'https://esm.sh/react-markdown@9';
-import rehypeRaw from 'https://esm.sh/rehype-raw@7';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { decode, decodeAudioData } from '../lib/audioUtils';
 

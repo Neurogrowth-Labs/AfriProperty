@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { StayIcon, TransportIcon, WellnessIcon } from './icons/CategoryIcons';
+import { StayIcon, TransportIcon, WellnessIcon, TownshipIcon } from './icons/CategoryIcons';
 import { PropertyType } from '../types';
 
 interface NewOfferingsProps {
@@ -22,8 +22,8 @@ const OfferingCard: React.FC<{
             <div className="bg-white/20 backdrop-blur-md p-4 rounded-2xl w-fit mb-6 border border-white/30 transform group-hover:rotate-12 transition-transform">
                 <Icon className="w-8 h-8" />
             </div>
-            <h3 className="text-4xl font-black tracking-tight">{title}</h3>
-            <p className="mt-3 text-lg font-medium text-white/90 max-w-xs">{description}</p>
+            <h3 className="text-3xl font-black tracking-tight">{title}</h3>
+            <p className="mt-3 text-sm font-medium text-white/90 max-w-xs">{description}</p>
             <div className="mt-6 w-12 h-1.5 bg-white rounded-full group-hover:w-24 transition-all duration-500"></div>
         </div>
     </div>
@@ -56,6 +56,14 @@ const NewOfferings: React.FC<NewOfferingsProps> = ({ onSelectCategory }) => {
             colorClass: 'from-brand-gold/80',
             onClick: () => onSelectCategory(PropertyType.WELLNESS)
         },
+        {
+            title: 'All Listings',
+            description: 'Browse the complete AfriProperty marketplace including residential and commercial.',
+            image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop',
+            icon: TownshipIcon,
+            colorClass: 'from-slate-900/90',
+            onClick: () => onSelectCategory(PropertyType.ALL)
+        },
     ];
 
     return (
@@ -68,7 +76,7 @@ const NewOfferings: React.FC<NewOfferingsProps> = ({ onSelectCategory }) => {
                         Your entire lifestyle, curated in one place. Discover unique stays, transport, and rejuvenation.
                     </p>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {offerings.map(offering => (
                         <OfferingCard key={offering.title} {...offering} />
                     ))}

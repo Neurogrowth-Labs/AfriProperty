@@ -237,7 +237,7 @@ const PropertyCard: React.FC<PropertyCardProps> = (props) => {
             )}
         </div>
       </div>
-      <button onClick={() => onOpenDetailModal(property)} className="p-4 flex-grow flex flex-col text-left">
+      <div onClick={() => onOpenDetailModal(property)} className="p-4 flex-grow flex flex-col text-left cursor-pointer">
         <div className="flex justify-between items-start mb-2">
             <span className="text-[10px] font-bold text-brand-primary uppercase tracking-widest">{property.propertyType}</span>
             <p className="text-xl font-bold text-brand-dark dark:text-white">{formattedPrice}</p>
@@ -295,7 +295,7 @@ const PropertyCard: React.FC<PropertyCardProps> = (props) => {
                 </button>
             </div>
         )}
-      </button>
+      </div>
     </div>
   );
 };

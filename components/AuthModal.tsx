@@ -216,12 +216,22 @@ const UserSignupView: React.FC<{onSignupSuccess: (user: User) => void, onSwitchT
         if (!formData.agreeToTerms) { setError("You must agree to the Terms & Conditions."); return; }
 
         setIsSubmitting(true);
-        const newUser: User = { id: Math.random().toString(), username: formData.email, fullName: formData.fullName, email: formData.email, password: formData.password, role: 'user' };
+        const newUser: User = { 
+            id: '00000000-0000-0000-0000-000000000000', // Temporary valid UUID
+            username: formData.email, 
+            fullName: formData.fullName, 
+            email: formData.email, 
+            password: formData.password, 
+            role: 'user',
+            planId: 'user',
+            planPrice: 0,
+            planDuration: '1 month'
+        };
         const result = await addUser(newUser);
         setIsSubmitting(false);
 
         if (result.success) {
-            onSignupSuccess(newUser);
+            onSignupSuccess({ ...newUser, id: result.userId || newUser.id });
         } else {
             setError(result.message);
             if (result.message.toLowerCase().includes('rate limit')) {
@@ -274,7 +284,23 @@ const AgentSignupView: React.FC<{ onSignupSuccess: () => void, onSwitchToLogin: 
         if (!formData.agreeToTerms) { setError("Agreement to terms is required."); return; }
         
         setIsSubmitting(true);
-        const newAgent: User = { id: Math.random().toString(), username: formData.email, fullName: formData.fullName, email: formData.email, password: formData.password, role: 'agent', phone: formData.phone, officeAddress: formData.officeAddress, businessRegNumber: formData.businessRegNumber, agentLicense: formData.agentLicense, idDocumentUrl: idDoc.name };
+        const newAgent: User = { 
+            id: '00000000-0000-0000-0000-000000000000', // Temporary valid UUID
+            username: formData.email, 
+            fullName: formData.fullName, 
+            email: formData.email, 
+            password: formData.password, 
+            role: 'agent', 
+            phone: formData.phone, 
+            officeAddress: formData.officeAddress, 
+            agencyName: formData.fullName, // Explicitly set agency name
+            businessRegNumber: formData.businessRegNumber, 
+            agentLicense: formData.agentLicense, 
+            idDocumentUrl: idDoc.name,
+            planId: 'agent',
+            planPrice: 250,
+            planDuration: '1 month'
+        };
         const result = await addUser(newAgent);
         setIsSubmitting(false);
 
@@ -318,7 +344,7 @@ const AgentSignupView: React.FC<{ onSignupSuccess: () => void, onSwitchToLogin: 
 
 const InvestorSignupView: React.FC<{ onSignupSuccess: () => void, setError: (e: string) => void, onSwitchToLogin: () => void }> = ({ onSignupSuccess, setError, onSwitchToLogin }) => {
     const [step, setStep] = useState(1);
-    const [formData, setFormData] = useState({ fullName: '', email: '', password: '', phone: '', investmentType: 'Individual', companyName: '', agreeToTerms: false });
+    const [formData, setFormData] = useState({ fullName: '', email: '', password: '', phone: '', address: '', investmentType: 'Individual', companyName: '', agreeToTerms: false });
     const [idDoc, setIdDoc] = useState<File | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [cooldown, setCooldown] = useState(0);
@@ -351,7 +377,22 @@ const InvestorSignupView: React.FC<{ onSignupSuccess: () => void, setError: (e: 
         if (!formData.agreeToTerms) { setError("Terms must be accepted."); return; }
 
         setIsSubmitting(true);
-        const newInvestor: User = { id: Math.random().toString(), username: formData.email, fullName: formData.fullName, email: formData.email, password: formData.password, role: 'investor', phone: formData.phone, investmentType: formData.investmentType as 'Individual' | 'Corporate', companyName: formData.companyName, proofOfIdentityUrl: idDoc.name };
+        const newInvestor: User = { 
+            id: '00000000-0000-0000-0000-000000000000', // Temporary valid UUID
+            username: formData.email, 
+            fullName: formData.fullName, 
+            email: formData.email, 
+            password: formData.password, 
+            role: 'investor', 
+            phone: formData.phone, 
+            officeAddress: formData.address,
+            investmentType: formData.investmentType as 'Individual' | 'Corporate', 
+            companyName: formData.companyName, 
+            proofOfIdentityUrl: idDoc.name,
+            planId: 'investor',
+            planPrice: 1490,
+            planDuration: '1 month'
+        };
         const result = await addUser(newInvestor);
         setIsSubmitting(false);
 
@@ -382,6 +423,7 @@ const InvestorSignupView: React.FC<{ onSignupSuccess: () => void, setError: (e: 
                 return (
                      <div className="space-y-4">
                         <InputField label="Mobile Number" name="phone" type="tel" value={formData.phone} onChange={handleInputChange} disabled={isSubmitting} placeholder="+27 ..." />
+                        <InputField label="Home / Office Address" name="address" value={formData.address} onChange={handleInputChange} disabled={isSubmitting} placeholder="Street, City, Province" />
                         <div><label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-1.5">Investment Structure</label><select name="investmentType" value={formData.investmentType} onChange={handleInputChange} disabled={isSubmitting} className="w-full input-base"><option>Individual</option><option>Corporate</option></select></div>
                         {formData.investmentType === 'Corporate' && <InputField label="Legal Company Name" name="companyName" value={formData.companyName} onChange={handleInputChange} disabled={isSubmitting} placeholder="Global Holdings Ltd" />}
                         <div className="flex justify-between pt-2"><button type="button" onClick={() => setStep(1)} className="btn-secondary w-auto px-8" disabled={isSubmitting}>Back</button><button type="button" onClick={() => setStep(3)} className="btn-primary w-auto px-10" disabled={isSubmitting}>Next Step</button></div>

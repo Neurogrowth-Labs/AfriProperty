@@ -9,6 +9,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { languageOptions, currencyOptions } from '../constants';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import NotificationsPanel from './NotificationsPanel';
+import { SunIcon, MoonIcon } from './icons/AgentDashboardIcons';
 
 interface HeaderProps {
   currentUser: User | null;
@@ -24,10 +25,29 @@ interface HeaderProps {
   onAboutClick: () => void;
   onServicesClick: () => void;
   onContactClick: () => void;
+  // Theme props
+  theme: 'light' | 'dark';
+  onThemeToggle: () => void;
 }
 
 const Header: React.FC<HeaderProps> = (props) => {
-  const { currentUser, notifications, onLoginClick, onSignUpClick, onDashboardClick, onListPropertyClick, onNotificationClick, onMarkAllNotificationsAsRead, onHomeClick, onAboutClick, onServicesClick, onContactClick } = props;
+  const { 
+    currentUser, 
+    notifications, 
+    onLoginClick, 
+    onSignUpClick, 
+    onDashboardClick, 
+    onListPropertyClick, 
+    onNotificationClick, 
+    onMarkAllNotificationsAsRead, 
+    onHomeClick, 
+    onAboutClick, 
+    onServicesClick, 
+    onContactClick,
+    theme,
+    onThemeToggle
+  } = props;
+  
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -84,13 +104,24 @@ const Header: React.FC<HeaderProps> = (props) => {
           <HomeIcon className="w-7 h-7 text-brand-primary group-hover:text-brand-secondary transition-colors" />
           <span className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">AfriProperty</span>
         </button>
+        
         <nav className="hidden lg:flex items-center space-x-8 text-sm font-medium">
           <a href="#" onClick={(e) => { e.preventDefault(); onHomeClick(); }} className="text-slate-600 dark:text-slate-300 hover:text-brand-primary dark:hover:text-white transition duration-200">{t.header.home}</a>
           <a href="#" onClick={(e) => { e.preventDefault(); onAboutClick(); }} className="text-slate-600 dark:text-slate-300 hover:text-brand-primary dark:hover:text-white transition duration-200">{t.header.about}</a>
           <a href="#" onClick={(e) => { e.preventDefault(); onServicesClick(); }} className="text-slate-600 dark:text-slate-300 hover:text-brand-primary dark:hover:text-white transition duration-200">{t.header.services}</a>
           <a href="#" onClick={(e) => { e.preventDefault(); onContactClick(); }} className="text-slate-600 dark:text-slate-300 hover:text-brand-primary dark:hover:text-white transition duration-200">{t.header.contact}</a>
         </nav>
-        <div className="flex items-center space-x-2 sm:space-x-3">
+
+        <div className="flex items-center space-x-1 sm:space-x-3">
+          {/* Theme Toggle */}
+          <button 
+            onClick={onThemeToggle} 
+            className="p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-brand-primary dark:hover:text-brand-accent transition-colors"
+            title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+          >
+            {theme === 'light' ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
+          </button>
+
           <div className="relative" ref={currencyRef}>
             <button onClick={() => setIsCurrencyOpen(!isCurrencyOpen)} className="p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-brand-primary dark:hover:text-white transition-colors flex items-center gap-1.5">
                 <BanknotesIcon className="w-5 h-5" />
@@ -114,6 +145,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                 </div>
             )}
           </div>
+
           <div className="relative" ref={langRef}>
             <button onClick={() => setIsLangOpen(!isLangOpen)} className="p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-brand-primary dark:hover:text-white transition-colors flex items-center gap-1.5">
                 <GlobeAltIcon className="w-5 h-5" />
@@ -141,6 +173,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                 </div>
             )}
           </div>
+
           <div className="relative" ref={notificationsRef}>
             <button
                 onClick={() => setIsNotificationsOpen(prev => !prev)}
@@ -168,7 +201,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                 <UserCircleIcon className="w-6 h-6" />
               </button>
               {currentUser.isVerified && (currentUser.role === 'agent' || currentUser.role === 'investor') && (
-                <CheckBadgeIcon className="absolute -bottom-0.5 -right-0.5 w-4 h-4 text-brand-primary bg-white rounded-full" />
+                <CheckBadgeIcon className="absolute -bottom-0.5 -right-0.5 w-4 h-4 text-brand-primary bg-white rounded-full shadow-sm" />
               )}
             </div>
           ) : (
@@ -186,6 +219,7 @@ const Header: React.FC<HeaderProps> = (props) => {
           </div>
         </div>
       </div>
+
        {/* Mobile Menu */}
       <div className={`absolute top-full left-0 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg lg:hidden transition-all duration-300 ease-in-out overflow-hidden ${isMobileMenuOpen ? 'max-h-96 shadow-lg border-b border-slate-100 dark:border-slate-800' : 'max-h-0'}`}>
         <nav className="flex flex-col p-4 space-y-2">

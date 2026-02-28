@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { CpuChipIcon } from './icons/ActionIcons';
-import ReactMarkdown from 'https://esm.sh/react-markdown@9';
-import rehypeRaw from 'https://esm.sh/rehype-raw@7';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 
 interface GroundingChunk {
   /* Updated to match GroundingChunkWeb from @google/genai */
