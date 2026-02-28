@@ -11,10 +11,11 @@ import InvestorGlobalMarketplace from './InvestorGlobalMarketplace';
 // FIX: Changed to a named import to match the named export from InvestorCommunity.tsx
 import { InvestorCommunity } from './InvestorCommunity';
 import InvestorSettingsPage from './InvestorSettings';
-import { ChartBarIcon, DocumentTextIcon, ChatBubbleLeftRightIcon } from '../../icons/ActionIcons';
+import { ChartBarIcon, DocumentTextIcon, ChatBubbleLeftRightIcon, CreditCardIcon } from '../../icons/ActionIcons';
 import InvestorReturns from './InvestorReturns';
 import InvestorDocuments from './InvestorDocuments';
 import InvestorMessages from './InvestorMessages';
+import InvestorBilling from './InvestorBilling';
 import type { Message } from '../../../types';
 
 
@@ -43,7 +44,7 @@ interface InvestorDashboardProps {
   onToggleCompare: (property: Property) => void;
 }
 
-type InvestorView = 'dashboard' | 'portfolio' | 'discovery' | 'tools' | 'marketplace' | 'community' | 'settings' | 'returns' | 'documents' | 'messages';
+type InvestorView = 'dashboard' | 'portfolio' | 'discovery' | 'tools' | 'marketplace' | 'community' | 'settings' | 'returns' | 'documents' | 'messages' | 'billing';
 
 const Sidebar: React.FC<{ activeView: InvestorView; setActiveView: (view: InvestorView) => void; closeSidebar: () => void; }> = ({ activeView, setActiveView, closeSidebar }) => {
     const navItems = [
@@ -58,6 +59,7 @@ const Sidebar: React.FC<{ activeView: InvestorView; setActiveView: (view: Invest
 
     const bottomNavItems = [
         { id: 'messages', label: 'Developer Messages', icon: ChatBubbleLeftRightIcon },
+        { id: 'billing', label: 'Subscription & Billing', icon: CreditCardIcon },
         { id: 'community', label: 'Community & Networking', icon: CommunityIcon },
         { id: 'settings', label: 'Settings', icon: SettingsIcon }
     ] as const;
@@ -123,6 +125,8 @@ const InvestorDashboard: React.FC<InvestorDashboardProps> = (props) => {
                 return <InvestorGlobalMarketplace onOpenDetailModal={props.onOpenDetailModal} />;
              case 'messages':
                 return <InvestorMessages {...props} />;
+            case 'billing':
+                return <InvestorBilling user={props.user} />;
             case 'community':
                 return <InvestorCommunity {...props} />;
             case 'settings':
