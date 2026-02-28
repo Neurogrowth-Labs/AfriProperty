@@ -41,7 +41,6 @@ export interface PaymentMethod {
     expiryMonth?: number;
     expiryYear?: number;
     isDefault: boolean;
-    providerType: 'card' | 'gateway';
     gatewayName?: 'stripe' | 'paypal';
 }
 
@@ -155,6 +154,9 @@ export interface User {
   companyName?: string;
   idDocumentUrl?: string;
   proofOfIdentityUrl?: string;
+  planId?: string;
+  planPrice?: number;
+  planDuration?: string;
 }
 
 export interface PropertyAlert {

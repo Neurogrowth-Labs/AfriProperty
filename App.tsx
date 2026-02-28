@@ -24,6 +24,7 @@ import AIResponseModal from './components/AIResponseModal';
 import { 
     getProperties, 
     saveProperties, 
+    deleteProperty,
     getTourRequests, 
     addTourRequest, 
     getSavedPropertiesForUser, 
@@ -112,11 +113,12 @@ const App: React.FC = () => {
   const [filters, setFilters] = useState<SearchFilters>(initialFilters);
   const [allProperties, setAllProperties] = useState<Property[]>([]);
   const [investmentProperties, setInvestmentProperties] = useState<Property[]>([]);
-  const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [isLoadingProperties, setIsLoadingProperties] = useState(true);
   
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [postLoginDestination, setPostLoginDestination] = useState<'dashboard' | 'stay'>('dashboard');
+
+  const propertyListRef = useRef<HTMLDivElement>(null);
 
   const refreshUser = async () => {
     const user = await getCurrentUser();
@@ -219,6 +221,31 @@ const App: React.FC = () => {
     fetchData();
   }, [currentUser]);
 
+  const filteredProperties = useMemo(() => {
+    const stayKeywords = ["apartment", "property", "commercial", "housing", "home", "house", "land", "stay", "hotel"];
+
+    return allProperties.filter(p => {
+        // Broaden the "Short-term Stay" category to include anything matching your requested keywords
+        let matchesType = filters.propertyType === PropertyType.ALL || p.propertyType === filters.propertyType;
+        
+        if (filters.propertyType === PropertyType.SHORT_TERM_RENTAL) {
+            const searchPool = `${p.title} ${p.description} ${p.propertyType}`.toLowerCase();
+            const hasKeyword = stayKeywords.some(kw => searchPool.includes(kw));
+            if (hasKeyword) matchesType = true;
+        }
+
+        const matchesListing = filters.listingType === ListingType.ALL || p.listingType === filters.listingType;
+        const matchesLocation = !filters.location || 
+            p.address.city.toLowerCase().includes(filters.location.toLowerCase()) ||
+            p.address.street.toLowerCase().includes(filters.location.toLowerCase());
+        const matchesPrice = p.price >= filters.priceMin && p.price <= filters.priceMax;
+        const matchesBeds = p.details.beds >= filters.bedrooms;
+        const matchesBaths = p.details.baths >= filters.bathrooms;
+
+        return matchesType && matchesListing && matchesLocation && matchesPrice && matchesBeds && matchesBaths;
+    });
+  }, [allProperties, filters]);
+
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
@@ -230,7 +257,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Sync theme with document class on mount
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -259,21 +285,10 @@ const App: React.FC = () => {
       }
   };
 
-  const handleMarkAllNotificationsAsRead = async () => {
-      if (currentUser) {
-          const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
-          if (unreadIds.length > 0) {
-              await markNotificationsAsRead(currentUser.id, unreadIds);
-              setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-              setReadNotificationIds(prev => new Set([...Array.from(prev), ...unreadIds]));
-          }
-      }
-  };
-
   const handleNotificationClick = async (noti: Notification) => {
        if (currentUser && !noti.isRead) {
            await markNotificationsAsRead(currentUser.id, [noti.id]);
-           setNotifications(prev => prev.map(n => n.id === noti.id ? { ...n, isRead: true } : n));
+           setNotifications(prev => prev.map(n => n.id === n.id ? { ...n, isRead: true } : n));
            setReadNotificationIds(prev => new Set([...Array.from(prev), noti.id]));
        }
        
@@ -306,17 +321,22 @@ const App: React.FC = () => {
   };
 
   const handleSaveProperty = async (property: Property) => {
+      const savedProperty = await saveProperties(property);
+      if (!savedProperty || Array.isArray(savedProperty)) {
+          alert("Failed to save property. Please try again.");
+          return;
+      }
+
       const updatedProperties = [...allProperties];
-      const index = updatedProperties.findIndex(p => p.id === property.id);
+      const index = updatedProperties.findIndex(p => p.id === property.id || p.id === savedProperty.id);
       if (index > -1) {
-          updatedProperties[index] = property;
+          updatedProperties[index] = savedProperty;
       } else {
-          updatedProperties.unshift(property);
+          updatedProperties.unshift(savedProperty);
       }
       setAllProperties(updatedProperties);
       setIsPropertyFormOpen(false);
       setPropertyToEdit(null);
-      await saveProperties(updatedProperties);
       alert("Property listing updated successfully!");
   };
 
@@ -329,9 +349,30 @@ const App: React.FC = () => {
       if (window.confirm("Are you sure you want to delete this listing?")) {
           const updated = allProperties.filter(p => p.id !== id);
           setAllProperties(updated);
-          await saveProperties(updated);
+          await deleteProperty(id);
       }
   }
+
+  const handleSelectOffering = (type: PropertyType) => {
+    setFilters(prev => ({
+        ...initialFilters,
+        propertyType: type
+    }));
+    
+    // Smooth scroll to property list
+    setTimeout(() => {
+        propertyListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  const handleFilterChange = (key: keyof SearchFilters, value: any) => {
+      setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handlePlanSelect = (role: 'user' | 'agent' | 'investor') => {
+      setAuthModalView(`${role}Signup` as AuthView);
+      setIsAuthModalOpen(true);
+  };
 
   return (
     <div className={`font-sans min-h-screen flex flex-col ${theme}`}>
@@ -344,21 +385,33 @@ const App: React.FC = () => {
         onDashboardClick={() => setIsDashboardOpen(true)}
         onListPropertyClick={handleListProperty}
         onNotificationClick={handleNotificationClick}
-        onMarkAllNotificationsAsRead={handleMarkAllNotificationsAsRead}
+        onMarkAllNotificationsAsRead={() => {}}
         onHomeClick={() => setPage('home')}
         onAboutClick={() => setPage('about')}
         onServicesClick={() => setPage('services')}
         onContactClick={() => setPage('contact')}
+        theme={theme}
+        onThemeToggle={toggleTheme}
       />
       <main className="flex-grow">
         {page === 'home' && (
             <>
-                <Hero onSearch={() => {}} isSearchingAI={false} filters={filters} onFilterChange={() => {}} />
-                <NewOfferings onSelectCategory={() => {}} />
-                <section className="py-12 bg-white dark:bg-slate-900">
+                <Hero onSearch={() => {}} isSearchingAI={false} filters={filters} onFilterChange={handleFilterChange} />
+                <NewOfferings onSelectCategory={handleSelectOffering} />
+                <section ref={propertyListRef} className="py-12 bg-white dark:bg-slate-900 scroll-mt-20">
                     <div className="container mx-auto px-6">
+                        <div className="flex justify-between items-end mb-8">
+                            <div>
+                                <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                                    {filters.propertyType === PropertyType.ALL ? 'All Listings' : `${filters.propertyType} Listings`}
+                                </h2>
+                                <p className="text-slate-500 dark:text-slate-400 font-medium">
+                                    {filteredProperties.length} results found matching your criteria.
+                                </p>
+                            </div>
+                        </div>
                         <PropertyList 
-                            properties={allProperties.slice(0, 6)} 
+                            properties={filteredProperties} 
                             currentUser={currentUser} 
                             onSaveToggle={() => {}} 
                             savedPropertyIds={savedPropertyIds} 
@@ -371,14 +424,19 @@ const App: React.FC = () => {
                             compareList={[]} 
                             onEdit={handleEditPropertyFromDashboard} 
                             onDelete={handleDeleteProperty} 
+                            isLoading={isLoadingProperties}
                         />
                     </div>
                 </section>
                 <MarketInsights />
             </>
         )}
+        {page === 'about' && <AboutPage />}
+        {page === 'contact' && <ContactPage />}
+        {page === 'services' && <ServicesPage onServiceClick={() => {}} />}
+        {page === 'pricing' && <PricingPage onPlanSelect={handlePlanSelect} />}
       </main>
-      <Footer onAboutClick={() => {}} onContactClick={() => {}} onBlogClick={() => {}} onPrivacyPolicyClick={() => {}} onTermsOfServiceClick={() => {}} onCareersClick={() => {}} onFindAProClick={() => {}} />
+      <Footer onAboutClick={() => setPage('about')} onContactClick={() => setPage('contact')} onBlogClick={() => {}} onPrivacyPolicyClick={() => {}} onTermsOfServiceClick={() => {}} onCareersClick={() => {}} onFindAProClick={() => {}} />
       <Chatbot />
       <AIVoiceChat isOpen={isAIVoiceChatOpen} onClose={() => setIsAIVoiceChatOpen(false)} />
       {selectedProperty && <ScheduleTourModal isOpen={isTourModalOpen} onClose={() => setIsTourModalOpen(false)} propertyTitle={selectedProperty.title} propertyId={selectedProperty.id} agentName={selectedProperty.agent.name} userId={currentUser?.id || ''} onSubmit={handleScheduleTour} />}
