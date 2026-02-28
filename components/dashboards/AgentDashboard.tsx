@@ -131,7 +131,7 @@ const AgentDashboard: React.FC<AgentDashboardProps> = (props) => {
             case 'earnings':
                 return <AgentEarnings {...props} />;
             case 'billing':
-                return <AgentBilling />;
+                return <AgentBilling user={props.user} />;
             default:
                 return <AgentDashboardHome {...props} />;
         }

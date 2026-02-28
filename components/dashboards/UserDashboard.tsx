@@ -233,7 +233,7 @@ const TourRequestsView: React.FC<{ tourRequests: TourRequest[] }> = ({ tourReque
 
     const pastTours = useMemo(() => {
         const now = new Date().getTime();
-        return tourRequests.filter(r => new Date(r.date).getTime() < now).sort((a, b) => new Date(a.date).getTime() - new Date(a.date).getTime());
+        return tourRequests.filter(r => new Date(r.date).getTime() < now).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }, [tourRequests]);
 
     return (
@@ -478,15 +478,15 @@ const PaymentsView: React.FC<{ user: User }> = ({ user }) => {
     const handleConnectGateway = async (gateway: 'stripe' | 'paypal') => {
         // Simulation of gateway connection
         const gatewayLabel = gateway === 'stripe' ? 'Stripe' : 'PayPal';
-        const gatewayIcon = gateway === 'stripe' ? 'https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg' : 'https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg';
         
         const result = await addPaymentMethod(user.id, {
             cardHolder: user.fullName || user.username,
-            brand: gatewayLabel,
+            brand: `Gateway: ${gatewayLabel}`, // Merge type into brand column as requested
             lastFour: gateway === 'stripe' ? 'tok_visa' : 'pay_user',
             isDefault: false,
-            providerType: 'gateway',
-            gatewayName: gateway
+            gatewayName: gateway,
+            expiryMonth: 12,
+            expiryYear: 2099
         });
 
         if (result) {
@@ -598,24 +598,24 @@ const PaymentsView: React.FC<{ user: User }> = ({ user }) => {
                                     <div key={method.id} className="relative flex items-center justify-between p-5 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl hover:border-brand-primary/50 transition-all group overflow-hidden">
                                         <div className="flex items-center gap-4 relative z-10">
                                             <div className="w-14 h-10 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg flex items-center justify-center font-black text-[9px] text-slate-500 uppercase tracking-tighter shadow-inner">
-                                                {method.brand === 'Visa' ? (
+                                                {method.brand.includes('Visa') ? (
                                                     <img src="visa.png" alt="Visa" className="h-4 w-auto object-contain" />
-                                                ) : method.brand === 'Mastercard' ? (
+                                                ) : method.brand.includes('Mastercard') ? (
                                                     <img src="mc.png" alt="Mastercard" className="h-6 w-auto object-contain" />
-                                                ) : method.brand === 'Stripe' ? (
+                                                ) : method.brand.includes('Stripe') ? (
                                                     <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" alt="Stripe" className="h-4 w-auto" />
-                                                ) : method.brand === 'PayPal' ? (
+                                                ) : method.brand.includes('PayPal') ? (
                                                     <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-5 w-auto" />
                                                 ) : method.brand}
                                             </div>
                                             <div>
                                                 <p className="font-black text-slate-900 dark:text-white text-sm">
-                                                    {method.providerType === 'gateway' ? `${method.brand} Connected` : `•••• ${method.lastFour}`}
+                                                    {method.gatewayName ? `${method.brand} Connected` : `•••• ${method.lastFour}`}
                                                 </p>
-                                                {method.providerType === 'card' ? (
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Exp: {method.expiryMonth}/{method.expiryYear}</p>
-                                                ) : (
+                                                {method.gatewayName ? (
                                                     <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Active Linked Account</p>
+                                                ) : (
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Exp: {method.expiryMonth}/{method.expiryYear}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -730,33 +730,45 @@ const AddCardModal: React.FC<{ isOpen: boolean; onClose: () => void; userId: str
         e.preventDefault();
         setIsSubmitting(true);
         
-        const brand = formData.cardNumber.startsWith('4') ? 'Visa' : 'Mastercard';
-        const lastFour = formData.cardNumber.slice(-4);
-        const [month, year] = formData.expiry.split('/');
+        const cleanCardNumber = formData.cardNumber.replace(/\s+/g, '');
+        const brandLabel = cleanCardNumber.startsWith('4') ? 'Visa' : 'Mastercard';
+        const lastFour = cleanCardNumber.slice(-4);
+        
+        // Robust expiry parsing
+        const expiryParts = formData.expiry.split('/');
+        const month = parseInt(expiryParts[0]?.trim(), 10) || 1;
+        let year = parseInt(expiryParts[1]?.trim(), 10) || 2025;
+        
+        // Handle 2-digit years (e.g., "25" -> 2025)
+        if (year < 100) {
+            year += 2000;
+        }
 
         const result = await addPaymentMethod(userId, {
-            cardHolder: formData.cardHolder,
-            brand: brand,
+            cardHolder: formData.cardHolder.trim(),
+            brand: `Card: ${brandLabel}`, // Merge type into brand column as requested
             lastFour: lastFour,
-            expiryMonth: parseInt(month, 10) || 12,
-            expiryYear: parseInt(year, 10) || 25,
-            isDefault: false,
-            providerType: 'card'
+            expiryMonth: month,
+            expiryYear: year,
+            isDefault: false
         });
 
-        if (result) {
+        if (result && result.id) {
+            // Chained operation: Create audit record in payments table
             await addPaymentRecord(userId, {
                 amount: 0,
                 currency: 'ZAR',
                 status: 'completed',
-                description: 'New card linked and verified.',
+                description: 'New card Linked and verified',
                 paymentMethodId: result.id
             });
+            
             onSuccess();
             onClose();
+            alert("Card linked and verified successfully!");
             setFormData({ cardHolder: '', cardNumber: '', expiry: '', cvc: '' });
         } else {
-            alert("Failed to add card. Please check your data.");
+            alert("Security Verification Failed: We could not verify this card with your bank. Please check your details and try again.");
         }
         setIsSubmitting(false);
     };
@@ -787,11 +799,16 @@ const AddCardModal: React.FC<{ isOpen: boolean; onClose: () => void; userId: str
                         <input 
                             required
                             type="text" 
-                            maxLength={16}
+                            maxLength={19}
                             placeholder="0000 0000 0000 0000"
                             className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:border-brand-primary outline-none transition-all font-mono text-lg tracking-widest"
                             value={formData.cardNumber}
-                            onChange={e => setFormData({...formData, cardNumber: e.target.value.replace(/\D/g, '')})}
+                            onChange={e => {
+                                // Add spaces for readability automatically
+                                let val = e.target.value.replace(/\D/g, '');
+                                let formatted = val.match(/.{1,4}/g)?.join(' ') || val;
+                                setFormData({...formData, cardNumber: formatted.slice(0, 19)});
+                            }}
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-5">
@@ -803,7 +820,11 @@ const AddCardModal: React.FC<{ isOpen: boolean; onClose: () => void; userId: str
                                 placeholder="12/25"
                                 className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:border-brand-primary outline-none transition-all font-bold"
                                 value={formData.expiry}
-                                onChange={e => setFormData({...formData, expiry: e.target.value})}
+                                onChange={e => {
+                                    let val = e.target.value.replace(/[^\d/]/g, '');
+                                    if (val.length === 2 && !val.includes('/')) val += '/';
+                                    setFormData({...formData, expiry: val.slice(0, 5)});
+                                }}
                             />
                         </div>
                         <div>
@@ -815,7 +836,7 @@ const AddCardModal: React.FC<{ isOpen: boolean; onClose: () => void; userId: str
                                 placeholder="***"
                                 className="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:border-brand-primary outline-none transition-all font-bold"
                                 value={formData.cvc}
-                                onChange={e => setFormData({...formData, cvc: e.target.value})}
+                                onChange={e => setFormData({...formData, cvc: e.target.value.replace(/\D/g, '')})}
                             />
                         </div>
                     </div>
