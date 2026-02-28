@@ -1,6 +1,10 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckBadgeIcon } from '../icons/ActionIcons';
+import { useCurrency } from '../../contexts/CurrencyContext';
+import { getPlanPrices } from '../../lib/data';
+import { Currency } from '../../types';
+import { CURRENCY_SYMBOLS } from '../../constants';
 
 interface PricingPageProps {
   onPlanSelect: (role: 'user' | 'agent' | 'investor') => void;
@@ -86,6 +90,35 @@ const FaqItem: React.FC<{ question: string, children: React.ReactNode }> = ({ qu
 
 
 const PricingPage: React.FC<PricingPageProps> = ({ onPlanSelect }) => {
+  const { currency } = useCurrency();
+  const [dbPrices, setDbPrices] = useState<{ [key: string]: number }>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPrices = async () => {
+      const prices = await getPlanPrices();
+      const priceMap: { [key: string]: number } = {};
+      prices.forEach(p => {
+        if (p.plan_currency === currency) {
+          priceMap[p.plan_type] = p.price;
+        }
+      });
+      setDbPrices(priceMap);
+      setIsLoading(false);
+    };
+    fetchPrices();
+  }, [currency]);
+
+  const getPriceDisplay = (role: string, defaultPrice: string) => {
+    if (isLoading) return '...';
+    const price = dbPrices[role];
+    if (price === undefined) return defaultPrice;
+    if (price === 0) return 'Free';
+    
+    const symbol = CURRENCY_SYMBOLS[currency as Currency] || '$';
+    return `${symbol}${price.toLocaleString()}`;
+  };
+
   return (
     <div className="animate-fade-in bg-slate-50 dark:bg-slate-900">
       {/* Hero */}
@@ -109,7 +142,9 @@ const PricingPage: React.FC<PricingPageProps> = ({ onPlanSelect }) => {
                         )}
                         <h3 className="text-2xl font-bold text-brand-dark dark:text-white text-center">{plan.name}</h3>
                         <div className="text-center my-6">
-                            <span className="text-5xl font-extrabold text-brand-dark dark:text-white">{plan.price}</span>
+                            <span className="text-5xl font-extrabold text-brand-dark dark:text-white">
+                                {getPriceDisplay(plan.role, plan.price)}
+                            </span>
                             <p className="text-slate-500 dark:text-slate-400 text-sm h-10">{plan.priceDetail}</p>
                         </div>
                         <ul className="space-y-4 mb-8 flex-grow">
