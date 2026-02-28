@@ -1,6 +1,11 @@
 
 import React from 'react';
 import { CheckBadgeIcon, CpuChipIcon } from '../../icons/ActionIcons';
+import { User } from '../../../types';
+
+interface AgentBillingProps {
+    user: User;
+}
 
 const plans = [
     {
@@ -37,7 +42,10 @@ const plans = [
     }
 ];
 
-const AgentBilling: React.FC = () => {
+const AgentBilling: React.FC<AgentBillingProps> = ({ user }) => {
+  const currentPlanName = user.planId ? (user.planId.charAt(0).toUpperCase() + user.planId.slice(1)) : 'Essential';
+  const currentPlanPrice = user.planPrice !== undefined ? `R${user.planPrice}` : 'Free';
+
   return (
     <div className="p-8 space-y-8">
       <div>
@@ -48,8 +56,9 @@ const AgentBilling: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm">
             <h3 className="font-semibold text-lg text-slate-800 dark:text-white">Current Plan</h3>
-            <p className="text-4xl font-bold text-brand-primary mt-2">Essential</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Your plan renews on November 27, 2023.</p>
+            <p className="text-4xl font-bold text-brand-primary mt-2">{currentPlanName}</p>
+            <p className="text-xl font-semibold text-slate-700 dark:text-slate-300">{currentPlanPrice}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Duration: {user.planDuration || '1 month'}</p>
         </div>
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm">
             <h3 className="font-semibold text-lg text-slate-800 dark:text-white">Listing Credits</h3>

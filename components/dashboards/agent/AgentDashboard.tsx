@@ -1,21 +1,21 @@
 
 import React, { useState } from 'react';
 import type { Property, TourRequest, User, Message, CalendarEvent, AgentProfile, Review, Lead, Achievement, InvestmentRequest } from '../../../types';
-import AgentDashboardHome from './agent/AgentDashboardHome';
-import AgentListingsManagement from './agent/AgentListingsManagement';
-import AgentCalendar from './agent/AgentCalendar';
-import { AgentAnalytics } from './agent/AgentAnalytics';
-import AgentProfilePage from './agent/AgentProfilePage';
-import AgentSupportPage from './agent/AgentSupportPage';
-import AgentLeadsManagement from './agent/AgentLeadsManagement';
-import AgentAITools from './agent/AgentAITools';
-import AgentTeamHub from './agent/AgentTeamHub';
+import AgentDashboardHome from './AgentDashboardHome';
+import AgentListingsManagement from './AgentListingsManagement';
+import AgentCalendar from './AgentCalendar';
+import { AgentAnalytics } from './AgentAnalytics';
+import AgentProfilePage from './AgentProfilePage';
+import AgentSupportPage from './AgentSupportPage';
+import AgentLeadsManagement from './AgentLeadsManagement';
+import AgentAITools from './AgentAITools';
+import AgentTeamHub from './AgentTeamHub';
 import { DashboardIcon, ListingsIcon, LeadsIcon, AnalyticsIcon, CalendarIcon as NavCalendarIcon, ProfileIcon, SupportIcon, SparklesIcon, HandshakeIcon, BanknotesIcon, CreditCardIcon } from '../../icons/AgentDashboardIcons';
-import AgentInvestmentRequests from './agent/AgentInvestmentRequests';
-import AgentEarnings from './agent/AgentEarnings';
-import AgentBilling from './agent/AgentBilling';
+import AgentInvestmentRequests from './AgentInvestmentRequests';
+import AgentEarnings from './AgentEarnings';
+import AgentBilling from './AgentBilling';
 import { ChatBubbleLeftRightIcon } from '../../icons/ActionIcons';
-import AgentMessages from './agent/AgentMessages';
+import AgentMessages from './AgentMessages';
 
 
 interface AgentDashboardProps {
@@ -131,7 +131,7 @@ const AgentDashboard: React.FC<AgentDashboardProps> = (props) => {
             case 'earnings':
                 return <AgentEarnings {...props} />;
             case 'billing':
-                return <AgentBilling />;
+                return <AgentBilling user={props.user} />;
             default:
                 return <AgentDashboardHome {...props} />;
         }
