@@ -52,6 +52,57 @@ export const getCurrentUser = async (): Promise<User | null> => {
             .single();
 
         if (profileError) {
+            console.error('[AfriProperty] Profile fetch error in getCurrentUser:', profileError);
+            // If profile is missing but user exists in auth, try to create it from metadata
+            if (profileError.code === 'PGRST116' || profileError.message.includes('0 rows')) {
+                const metadata = authUser.user_metadata;
+                const newProfile = {
+                    id: authUser.id,
+                    username: metadata.username || authUser.email?.split('@')[0],
+                    full_name: metadata.full_name || '',
+                    role: metadata.role || 'user',
+                    phone: metadata.phone || '',
+                    office_address: metadata.office_address || '',
+                    agency_name: metadata.agency_name || '',
+                    business_reg_number: metadata.business_reg_number || '',
+                    agent_license: metadata.agent_license || '',
+                    id_document_url: metadata.id_document_url || '',
+                    proof_of_identity_url: metadata.proof_of_identity_url || '',
+                    investment_type: metadata.investment_type || '',
+                    company_name: metadata.company_name || '',
+                    plan_id: metadata.plan_id || 'user',
+                    plan_price: Number(metadata.plan_price || 0),
+                    plan_duration: metadata.plan_duration || '1 month'
+                };
+
+                const { data: createdProfile, error: createError } = await supabase
+                    .from('profiles')
+                    .insert(newProfile)
+                    .select()
+                    .single();
+
+                if (!createError && createdProfile) {
+                    return {
+                        ...createdProfile,
+                        id: createdProfile.id,
+                        isVerified: createdProfile.is_verified,
+                        fullName: createdProfile.full_name,
+                        profilePicture: createdProfile.profile_picture,
+                        agencyName: createdProfile.agency_name,
+                        businessRegNumber: createdProfile.business_reg_number,
+                        officeAddress: createdProfile.office_address,
+                        agentLicense: createdProfile.agent_license,
+                        investmentType: createdProfile.investment_type,
+                        companyName: createdProfile.company_name,
+                        idDocumentUrl: createdProfile.id_document_url,
+                        proofOfIdentityUrl: createdProfile.proof_of_identity_url,
+                        planId: createdProfile.plan_id,
+                        planPrice: createdProfile.plan_price,
+                        planDuration: createdProfile.plan_duration
+                    } as User;
+                }
+            }
+
             // Handle invalid UUID error from Postgres (22P02)
             if (profileError.code === '22P02') {
                 await supabase.auth.signOut();
@@ -82,7 +133,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
     }
 };
 
-export const authenticateUser = async (email: string, password: string): Promise<{ user: User | null; error?: string }> => {
+export const authenticateUser = async (email: string, password: string): Promise<{ user: User | null; error?: string; errorCode?: string }> => {
     try {
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
@@ -90,7 +141,7 @@ export const authenticateUser = async (email: string, password: string): Promise
         });
 
         if (error) {
-            return { user: null, error: error.message };
+            return { user: null, error: error.message, errorCode: (error as any).code || (error as any).status };
         }
 
         if (!data.user) return { user: null, error: 'Authentication failed.' };
@@ -101,7 +152,66 @@ export const authenticateUser = async (email: string, password: string): Promise
             .eq('id', data.user.id)
             .single();
 
-        if (profileError) return { user: null, error: 'Profile not found.' };
+        if (profileError) {
+            console.error('[AfriProperty] Profile fetch error in authenticateUser:', profileError);
+            // Self-heal: If profile is missing but user exists in auth, try to create it from metadata
+            if (profileError.code === 'PGRST116' || profileError.message.includes('0 rows')) {
+                const metadata = data.user.user_metadata;
+                const newProfile = {
+                    id: data.user.id,
+                    username: metadata.username || data.user.email?.split('@')[0],
+                    full_name: metadata.full_name || '',
+                    role: metadata.role || 'user',
+                    phone: metadata.phone || '',
+                    office_address: metadata.office_address || '',
+                    agency_name: metadata.agency_name || '',
+                    business_reg_number: metadata.business_reg_number || '',
+                    agent_license: metadata.agent_license || '',
+                    id_document_url: metadata.id_document_url || '',
+                    proof_of_identity_url: metadata.proof_of_identity_url || '',
+                    investment_type: metadata.investment_type || '',
+                    company_name: metadata.company_name || '',
+                    plan_id: metadata.plan_id || 'user',
+                    plan_price: Number(metadata.plan_price || 0),
+                    plan_duration: metadata.plan_duration || '1 month'
+                };
+
+                const { data: createdProfile, error: createError } = await supabase
+                    .from('profiles')
+                    .insert(newProfile)
+                    .select()
+                    .single();
+
+                if (!createError && createdProfile) {
+                    const user = {
+                        ...createdProfile,
+                        isVerified: createdProfile.is_verified,
+                        fullName: createdProfile.full_name,
+                        profilePicture: createdProfile.profile_picture,
+                        agencyName: createdProfile.agency_name,
+                        businessRegNumber: createdProfile.business_reg_number,
+                        officeAddress: createdProfile.office_address,
+                        agentLicense: createdProfile.agent_license,
+                        investmentType: createdProfile.investment_type,
+                        companyName: createdProfile.company_name,
+                        idDocumentUrl: createdProfile.id_document_url,
+                        proofOfIdentityUrl: createdProfile.proof_of_identity_url,
+                        planId: createdProfile.plan_id,
+                        planPrice: createdProfile.plan_price,
+                        planDuration: createdProfile.plan_duration
+                    } as User;
+
+                    if ((user.role === 'agent' || user.role === 'investor') && !user.isVerified) {
+                        return { user: null, error: `Your ${user.role} account is pending manual verification by our team.` };
+                    }
+
+                    return { user };
+                }
+            }
+            
+            // If it's a real error (not just missing profile), return an error message
+            return { user: null, error: 'Profile fetch failed. Please try again later.' };
+        }
 
         const user = {
             ...profile,
@@ -122,7 +232,7 @@ export const authenticateUser = async (email: string, password: string): Promise
         } as User;
 
         if ((user.role === 'agent' || user.role === 'investor') && !user.isVerified) {
-            return { user: null, error: `pending_verification_${user.role}` };
+            return { user: null, error: `Your ${user.role} account is pending manual verification by our team.` };
         }
 
         return { user };
@@ -168,9 +278,15 @@ export const addUser = async (user: User): Promise<{ success: boolean; message: 
             console.error('Supabase Signup Error:', error);
             return { success: false, message: error.message };
         }
+
+        const isConfirmationRequired = data.user && !data.session;
+        const message = isConfirmationRequired 
+            ? 'Account created! Please check your email to confirm your account before logging in.'
+            : 'Account created successfully! You can now log in.';
+
         return { 
             success: true, 
-            message: 'Account created successfully. Please check your email for verification.',
+            message,
             userId: data.user?.id
         };
     } catch (e) {
@@ -179,7 +295,21 @@ export const addUser = async (user: User): Promise<{ success: boolean; message: 
     }
 };
 
-// --- Social Authentication ---
+export const resendConfirmationEmail = async (email: string): Promise<{ success: boolean; message: string }> => {
+    try {
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email: email,
+            options: {
+                emailRedirectTo: window.location.origin
+            }
+        });
+        if (error) throw error;
+        return { success: true, message: 'Confirmation email resent. Please check your inbox.' };
+    } catch (e: any) {
+        return { success: false, message: e.message || 'Failed to resend confirmation email.' };
+    }
+};
 
 export const signInWithGoogle = async (): Promise<void> => {
     try {
