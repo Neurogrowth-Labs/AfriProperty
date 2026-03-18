@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CloseIcon } from './icons/NavIcons';
-import { authenticateUser, addUser } from '../lib/data';
+import { authenticateUser, addUser, resendConfirmationEmail } from '../lib/data';
 import type { User } from '../types';
 import { GoogleIcon, AppleIcon } from './icons/SocialIcons';
 import { EyeIcon, EyeSlashIcon, CheckIcon, ArrowUpTrayIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
@@ -131,25 +131,47 @@ const PasswordStrengthMeter: React.FC<{ criteria: PasswordCriteria }> = ({ crite
 // --- Sub-components for each view ---
 
 const LoginView: React.FC<{onLoginSuccess: (user: User) => void, onSwitchToSignup: () => void, onSwitchToForgotPassword: () => void, setError: (e: string) => void}> = ({ onLoginSuccess, onSwitchToSignup, onSwitchToForgotPassword, setError }) => {
-    const [email, setEmail] = useState('peter.vdm@example.com');
-    const [password, setPassword] = useState('Password123!');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
+    const [isResending, setIsResending] = useState(false);
+    const [resendSuccess, setResendSuccess] = useState('');
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setResendSuccess('');
 
-        const { user, error } = await authenticateUser(email, password);
+        const { user, error, errorCode } = await authenticateUser(email, password);
         if (user) {
             onLoginSuccess(user);
         } else {
-            if (error === 'pending_verification_agent' || error === 'pending_verification_investor') {
-                setError("Your account is pending verification. We'll notify you upon approval.");
+            const isUnconfirmed = errorCode === 'email_not_confirmed' || 
+                                (error && error.toLowerCase().includes('email not confirmed'));
+            
+            if (isUnconfirmed) {
+                setError("Your email is not confirmed. Please check your inbox or click below to resend.");
             } else {
-                setError("Invalid email or password.");
+                setError(error || "Invalid email or password.");
             }
         }
+    };
+
+    const handleResendEmail = async () => {
+        if (!email) {
+            setError("Please enter your email address first.");
+            return;
+        }
+        setIsResending(true);
+        setError('');
+        const { success, message } = await resendConfirmationEmail(email);
+        if (success) {
+            setResendSuccess(message);
+        } else {
+            setError(message);
+        }
+        setIsResending(false);
     };
 
     return (
@@ -157,6 +179,14 @@ const LoginView: React.FC<{onLoginSuccess: (user: User) => void, onSwitchToSignu
             <div className="text-center">
                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Log in with your credentials or social account.</p>
             </div>
+            
+            {resendSuccess && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-xs font-bold flex items-center gap-2">
+                    <CheckIcon className="w-4 h-4" />
+                    {resendSuccess}
+                </div>
+            )}
+
             <form onSubmit={handleLogin} className="space-y-5">
                  <InputField label="Email Address" id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@example.com" />
                  <InputField label="Password" id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} icon={showPassword ? EyeSlashIcon : EyeIcon} onIconClick={() => setShowPassword(!showPassword)} placeholder="••••••••" />
@@ -168,6 +198,18 @@ const LoginView: React.FC<{onLoginSuccess: (user: User) => void, onSwitchToSignu
                  
                  <button type="submit" className="btn-primary py-3.5">Log In</button>
             </form>
+
+            <div className="text-center">
+                <button 
+                    type="button" 
+                    onClick={handleResendEmail} 
+                    disabled={isResending}
+                    className="text-xs font-bold text-slate-500 hover:text-brand-primary transition-colors underline underline-offset-4"
+                >
+                    {isResending ? 'Sending...' : "Didn't receive confirmation email? Resend"}
+                </button>
+            </div>
+
             <div className="relative">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200 dark:border-slate-800"></div></div>
                 <div className="relative flex justify-center text-xs uppercase"><span className="bg-white dark:bg-slate-900 px-3 text-slate-500 font-bold tracking-widest">OR</span></div>
@@ -202,8 +244,9 @@ const UserSignupView: React.FC<{onSignupSuccess: (user: User) => void, onSwitchT
         }
     }, [cooldown]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type, checked } = e.target;
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value, type } = e.target;
+        const checked = (e.target as HTMLInputElement).checked;
         setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     };
 
@@ -356,7 +399,7 @@ const InvestorSignupView: React.FC<{ onSignupSuccess: () => void, setError: (e: 
         }
     }, [cooldown]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         const checked = (e.target as HTMLInputElement).checked;
         setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
@@ -536,7 +579,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, 
   return (
     <div className="fixed inset-0 bg-brand-dark/60 backdrop-blur-sm flex items-center justify-center z-[150] p-4 animate-fade-in" onClick={onClose}>
         <div 
-            className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-md transform transition-all duration-300 opacity-0 animate-fade-in-scale border border-slate-100 dark:border-slate-800 overflow-hidden" 
+            className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-md transform transition-all duration-300 animate-fade-in-scale border border-slate-100 dark:border-slate-800 overflow-hidden" 
             onClick={e => e.stopPropagation()}
         >
             <header className="flex justify-between items-center p-6 border-b border-slate-50 dark:border-slate-800">
