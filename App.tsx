@@ -121,18 +121,28 @@ const App: React.FC = () => {
   const propertyListRef = useRef<HTMLDivElement>(null);
 
   const refreshUser = async () => {
+    console.log('[AfriProperty] Refreshing user state...');
     const user = await getCurrentUser();
+    console.log('[AfriProperty] Current user after refresh:', user ? user.email : 'null');
     setCurrentUser(user);
   };
 
   useEffect(() => {
+    console.log('[AfriProperty] Initializing Auth...');
     refreshUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('[AfriProperty] Auth event:', event);
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
             await refreshUser();
+            if (event === 'SIGNED_IN') {
+                console.log('[AfriProperty] User signed in, closing modal');
+                setIsAuthModalOpen(false);
+            }
         } else if (event === 'SIGNED_OUT') {
+            console.log('[AfriProperty] User signed out, clearing state');
             setCurrentUser(null);
+            setIsDashboardOpen(false);
         }
     });
     return () => subscription.unsubscribe();
@@ -309,6 +319,12 @@ const App: React.FC = () => {
     }
   };
 
+  const handleLogout = async () => {
+    await logoutUser();
+    setCurrentUser(null);
+    setIsDashboardOpen(false);
+  };
+
   const handleListProperty = () => {
       if (!currentUser) {
           setPostLoginDestination('stay');
@@ -465,7 +481,7 @@ const App: React.FC = () => {
             investorSettings={investorSettings} 
             currency={currency} 
             theme={theme} 
-            onLogout={() => { logoutUser(); setCurrentUser(null); setIsDashboardOpen(false); }} 
+            onLogout={handleLogout} 
             onEditProperty={handleEditPropertyFromDashboard} 
             onDeleteProperty={handleDeleteProperty} 
             onDraftReply={() => {}} 
