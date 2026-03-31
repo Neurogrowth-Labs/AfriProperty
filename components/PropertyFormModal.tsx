@@ -123,7 +123,7 @@ const PropertyFormModal: React.FC<PropertyFormModalProps> = ({ isOpen, onClose, 
                     const base64 = await blobToBase64(file);
                     newImages.push(`data:${file.type};base64,${base64}`);
                 } catch (err) {
-                    console.error("Error converting file to base64", err);
+                    console.error("Error converting file to base64", err instanceof Error ? err.message : err);
                 }
             }
         }
@@ -211,7 +211,7 @@ const PropertyFormModal: React.FC<PropertyFormModalProps> = ({ isOpen, onClose, 
             });
             setProperty(prev => ({ ...prev, description: result.text || '' }));
         } catch (error) {
-            console.error("Error generating description:", error);
+            console.error("Error generating description:", error instanceof Error ? error.message : error);
         } finally {
             setIsGenerating(false);
         }
@@ -242,7 +242,7 @@ const PropertyFormModal: React.FC<PropertyFormModalProps> = ({ isOpen, onClose, 
             } else {
                 setIsListening(false);
             }
-        } catch(e) { console.error(e); setIsListening(false); }
+        } catch(e) { console.error('Voice synthesis error:', e instanceof Error ? e.message : e); setIsListening(false); }
     }
 
     const toggleRecording = async () => {
@@ -281,7 +281,7 @@ const PropertyFormModal: React.FC<PropertyFormModalProps> = ({ isOpen, onClose, 
                 mediaRecorder.start();
                 setIsRecording(true);
             } catch (err) {
-                console.error("Error accessing microphone:", err);
+                console.error("Error accessing microphone:", err instanceof Error ? err.message : err);
             }
         }
     };
@@ -323,216 +323,329 @@ const PropertyFormModal: React.FC<PropertyFormModalProps> = ({ isOpen, onClose, 
                 </button>
             </header>
             
-            <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto">
+            <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto custom-scrollbar">
                 <div className="p-6 space-y-6">
                     {/* Basic Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label htmlFor="title" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Title</label>
-                            <input type="text" name="title" value={property.title} onChange={handleChange} required className="mt-1 w-full input"/>
-                        </div>
-                        <div>
-                            <label htmlFor="price" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Price ({currency} or {currency}/mo)</label>
-                            <input type="number" name="price" value={property.price} onChange={(e) => setProperty(p => ({...p, price: Number(e.target.value)}))} required className="mt-1 w-full input"/>
-                        </div>
-                         <div>
-                            <label htmlFor="listingType" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Listing Type</label>
-                            <select name="listingType" value={property.listingType} onChange={handleChange} className="mt-1 w-full input">
-                                <option value={ListingType.RENT}>For Rent</option>
-                                <option value={ListingType.SALE}>For Sale</option>
-                                <option value={ListingType.FOR_INVESTMENT}>For Investment</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label htmlFor="propertyType" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Property Type</label>
-                            <select name="propertyType" value={property.propertyType} onChange={handleChange} className="mt-1 w-full input">
-                                {(Object.values(PropertyType) as string[]).filter(t => t !== PropertyType.ALL).map(type => <option key={type} value={type}>{type}</option>)}
-                            </select>
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 pb-2">Basic Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label htmlFor="title" className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Property Title <span className="text-red-500">*</span></label>
+                                <input 
+                                    type="text" 
+                                    name="title" 
+                                    id="title"
+                                    placeholder="e.g. Modern Luxury Villa with Sea View"
+                                    value={property.title} 
+                                    onChange={handleChange} 
+                                    required 
+                                    className="w-full input-field"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label htmlFor="price" className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Price ({currency}) <span className="text-red-500">*</span></label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">{currency}</span>
+                                    <input 
+                                        type="number" 
+                                        name="price" 
+                                        id="price"
+                                        value={property.price} 
+                                        onChange={(e) => setProperty(p => ({...p, price: Number(e.target.value)}))} 
+                                        required 
+                                        className="w-full input-field pl-12"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                            </div>
+                             <div className="space-y-1">
+                                <label htmlFor="listingType" className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Listing Type</label>
+                                <select name="listingType" id="listingType" value={property.listingType} onChange={handleChange} className="w-full input-field">
+                                    <option value={ListingType.RENT}>For Rent</option>
+                                    <option value={ListingType.SALE}>For Sale</option>
+                                    <option value={ListingType.FOR_INVESTMENT}>For Investment</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <label htmlFor="propertyType" className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Property Type</label>
+                                <select name="propertyType" id="propertyType" value={property.propertyType} onChange={handleChange} className="w-full input-field">
+                                    {(Object.values(PropertyType) as string[]).filter(t => t !== PropertyType.ALL).map(type => <option key={type} value={type}>{type}</option>)}
+                                </select>
+                            </div>
                         </div>
                     </div>
 
                      {/* Verification Checkbox */}
-                    <div className="pt-2">
-                        <label className="flex items-center gap-3 cursor-pointer">
+                    <div className="bg-brand-light/20 dark:bg-slate-800/50 p-4 rounded-lg border border-brand-light dark:border-slate-700">
+                        <label className="flex items-start gap-3 cursor-pointer">
                             <input
                                 type="checkbox"
                                 name="verified"
                                 checked={property.verified || false}
                                 onChange={e => setProperty(p => ({...p, verified: e.target.checked}))}
-                                className="h-5 w-5 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                                className="mt-1 h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-brand-primary focus:ring-brand-primary bg-white dark:bg-slate-700"
                             />
-                            <span className="font-medium text-slate-700 dark:text-slate-200">
-                                Mark as Verified Listing
-                                <span className="block text-xs text-slate-500 dark:text-slate-400 font-normal">Adds a verification badge to the property card and detail page.</span>
-                            </span>
+                            <div className="flex flex-col">
+                                <span className="font-bold text-slate-800 dark:text-white text-sm">
+                                    Mark as Verified Listing
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Adds a verification badge to the property card and detail page. This increases trust and visibility.
+                                </span>
+                            </div>
                         </label>
                     </div>
 
                     {/* Address */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                         <div>
-                            <label htmlFor="address.street" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Street</label>
-                            <input type="text" name="address.street" value={property.address.street} onChange={handleChange} required className="mt-1 w-full input"/>
-                        </div>
-                        <div>
-                            <label htmlFor="address.city" className="block text-sm font-medium text-slate-700 dark:text-slate-200">City</label>
-                            <input type="text" name="address.city" value={property.address.city} onChange={handleChange} required className="mt-1 w-full input"/>
-                        </div>
-                        <div>
-                            <label htmlFor="address.zip" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Zip Code</label>
-                            <input type="text" name="address.zip" value={property.address.zip} onChange={handleChange} required className="mt-1 w-full input"/>
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 pb-2">Location Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                             <div className="space-y-1 md:col-span-1">
+                                <label htmlFor="address.street" className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Street Address</label>
+                                <input type="text" name="address.street" id="address.street" value={property.address.street} onChange={handleChange} required className="w-full input-field" placeholder="123 Main St"/>
+                            </div>
+                            <div className="space-y-1">
+                                <label htmlFor="address.city" className="block text-sm font-semibold text-slate-700 dark:text-slate-200">City</label>
+                                <input type="text" name="address.city" id="address.city" value={property.address.city} onChange={handleChange} required className="w-full input-field" placeholder="City Name"/>
+                            </div>
+                            <div className="space-y-1">
+                                <label htmlFor="address.zip" className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Zip Code</label>
+                                <input type="text" name="address.zip" id="address.zip" value={property.address.zip} onChange={handleChange} required className="w-full input-field" placeholder="Postal Code"/>
+                            </div>
                         </div>
                     </div>
                     
                     {/* Details */}
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                         <div>
-                            <label htmlFor="details.beds" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Bedrooms</label>
-                            <input type="number" name="details.beds" value={property.details.beds} onChange={handleNumericChange} required className="mt-1 w-full input"/>
-                        </div>
-                        <div>
-                            <label htmlFor="details.baths" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Bathrooms</label>
-                            <input type="number" name="details.baths" value={property.details.baths} onChange={handleNumericChange} required className="mt-1 w-full input"/>
-                        </div>
-                        <div>
-                            <label htmlFor="details.area" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Area (sqft)</label>
-                            <input type="number" name="details.area" value={property.details.area} onChange={handleNumericChange} required className="mt-1 w-full input"/>
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 pb-2">Property Specifications</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                             <div className="space-y-1">
+                                <label htmlFor="details.beds" className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Bedrooms</label>
+                                <input type="number" name="details.beds" id="details.beds" value={property.details.beds} onChange={handleNumericChange} required className="w-full input-field" min="0"/>
+                            </div>
+                            <div className="space-y-1">
+                                <label htmlFor="details.baths" className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Bathrooms</label>
+                                <input type="number" name="details.baths" id="details.baths" value={property.details.baths} onChange={handleNumericChange} required className="w-full input-field" min="0" step="0.5"/>
+                            </div>
+                            <div className="space-y-1">
+                                <label htmlFor="details.area" className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Area (sqft)</label>
+                                <input type="number" name="details.area" id="details.area" value={property.details.area} onChange={handleNumericChange} required className="w-full input-field" min="0"/>
+                            </div>
                         </div>
                     </div>
 
                     {/* Descriptions */}
-                     <div>
-                        <div className="flex justify-between items-center mb-1">
-                            <label htmlFor="description" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Description</label>
-                            <div className="flex items-center gap-2">
-                                <button 
-                                    type="button" 
-                                    onClick={toggleRecording} 
-                                    className={`p-1.5 rounded-full transition-colors ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
-                                    title="Dictate Description"
-                                >
-                                    <MicrophoneIcon className="w-4 h-4" />
-                                </button>
-                                <button type="button" onClick={() => handleListen(property.description)} disabled={isListening || !property.description} className="p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50">
-                                    {isListening ? <PauseIcon className="w-4 h-4"/> : <SpeakerWaveIcon className="w-4 h-4" />}
-                                </button>
-                                <button 
-                                    type="button" 
-                                    onClick={handleGenerateDescription} 
-                                    disabled={isGenerating} 
-                                    className="text-xs font-black uppercase tracking-widest bg-brand-primary text-brand-gold border border-brand-gold px-3 py-1.5 rounded-lg hover:bg-brand-gold hover:text-brand-dark transition-all disabled:opacity-50 flex items-center gap-1 shadow-lg"
-                                >
-                                    {isGenerating ? (
-                                        <div className="w-4 h-4 border-2 border-brand-gold border-t-transparent rounded-full animate-spin"></div>
-                                    ) : (
-                                        <SparklesIcon className="w-4 h-4"/>
-                                    )}
-                                    Premium Write
-                                </button>
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 pb-2">Description & Insights</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label htmlFor="description" className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Property Description</label>
+                                    <div className="flex items-center gap-2">
+                                        <button 
+                                            type="button" 
+                                            onClick={toggleRecording} 
+                                            className={`p-2 rounded-lg transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'}`}
+                                            title="Dictate Description"
+                                        >
+                                            <MicrophoneIcon className="w-4 h-4" />
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => handleListen(property.description)} 
+                                            disabled={isListening || !property.description} 
+                                            className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 disabled:opacity-50 transition-all"
+                                            title="Listen to Description"
+                                        >
+                                            {isListening ? <PauseIcon className="w-4 h-4"/> : <SpeakerWaveIcon className="w-4 h-4" />}
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            onClick={handleGenerateDescription} 
+                                            disabled={isGenerating} 
+                                            className="flex items-center gap-2 px-3 py-1.5 bg-brand-primary text-white text-xs font-bold rounded-lg hover:bg-brand-primary/90 transition-all shadow-md disabled:opacity-50"
+                                        >
+                                            {isGenerating ? (
+                                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            ) : (
+                                                <SparklesIcon className="w-3 h-3"/>
+                                            )}
+                                            AI Write
+                                        </button>
+                                    </div>
+                                </div>
+                                <textarea 
+                                    name="description" 
+                                    id="description"
+                                    value={property.description} 
+                                    onChange={handleChange} 
+                                    rows={4} 
+                                    placeholder="Tell potential buyers/renters what makes this property special..."
+                                    className="w-full input-field resize-none"
+                                ></textarea>
+                            </div>
+                            <div>
+                                <label htmlFor="neighborhoodInfo" className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Neighborhood Highlights</label>
+                                <textarea 
+                                    name="neighborhoodInfo" 
+                                    id="neighborhoodInfo"
+                                    value={property.neighborhoodInfo} 
+                                    onChange={handleChange} 
+                                    rows={2} 
+                                    placeholder="Schools, parks, transport, shopping nearby..."
+                                    className="w-full input-field resize-none"
+                                ></textarea>
                             </div>
                         </div>
-                        <textarea name="description" value={property.description} onChange={handleChange} rows={3} className="w-full input"></textarea>
-                    </div>
-                    <div>
-                        <label htmlFor="neighborhoodInfo" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Neighborhood Info</label>
-                        <textarea name="neighborhoodInfo" value={property.neighborhoodInfo} onChange={handleChange} rows={2} className="mt-1 w-full input"></textarea>
                     </div>
                     
                     {/* Media Drag and Drop */}
-                    <div className="space-y-3">
-                         <div className="flex justify-between items-center">
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Property Images</label>
-                            <span className="text-xs text-slate-500 dark:text-slate-400">{property.images.length} images uploaded</span>
-                         </div>
-                        
-                        <div 
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={handleDrop}
-                            onClick={() => fileInputRef.current?.click()}
-                            className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${isDragging ? 'border-brand-primary bg-brand-light/50 dark:bg-slate-800' : 'border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-                        >
-                            <CameraIcon className={`w-8 h-8 mb-2 ${isDragging ? 'text-brand-primary' : 'text-slate-400'}`} />
-                            <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">Drag & Drop or Click to Upload</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Supports multiple JPG, PNG images</p>
-                            <input 
-                                type="file" 
-                                multiple 
-                                accept="image/*" 
-                                className="hidden" 
-                                ref={fileInputRef} 
-                                onChange={handleFileInputChange}
-                            />
-                        </div>
-
-                        {property.images.length > 0 && (
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 mt-4">
-                                {property.images.map((img, index) => (
-                                    <div 
-                                        key={index} 
-                                        draggable
-                                        onDragStart={(e) => handleImageDragStart(e, index)}
-                                        onDragOver={(e) => handleImageDragOver(e, index)}
-                                        onDrop={(e) => handleImageDrop(e, index)}
-                                        className="relative aspect-square group rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 cursor-move"
-                                    >
-                                        <img src={img} alt={`Uploaded ${index}`} className="w-full h-full object-cover" />
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
-                                        <button 
-                                            type="button"
-                                            onClick={() => removeImage(index)}
-                                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                                            title="Remove image"
-                                        >
-                                            <TrashIcon className="w-3 h-3" />
-                                        </button>
-                                        <div className="absolute bottom-1 left-1 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 pointer-events-none">
-                                            {index === 0 ? 'Cover' : `#${index + 1}`}
-                                        </div>
-                                    </div>
-                                ))}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 pb-2">Media & Visuals</h3>
+                        <div className="space-y-3">
+                             <div className="flex justify-between items-center">
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Property Images</label>
+                                <span className="text-xs font-medium text-brand-primary bg-brand-light dark:bg-slate-800 px-2 py-1 rounded-full">{property.images.length} images</span>
+                             </div>
+                            
+                            <div 
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                onClick={() => fileInputRef.current?.click()}
+                                className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${isDragging ? 'border-brand-primary bg-brand-light/30 dark:bg-slate-800/50 scale-[1.01]' : 'border-slate-300 dark:border-slate-700 hover:border-brand-primary hover:bg-slate-50 dark:hover:bg-slate-800/30'}`}
+                            >
+                                <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-full mb-3">
+                                    <CameraIcon className={`w-8 h-8 ${isDragging ? 'text-brand-primary' : 'text-slate-400'}`} />
+                                </div>
+                                <p className="text-sm text-slate-700 dark:text-slate-200 font-bold">Drag & Drop or Click to Upload</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">High quality JPG or PNG (Max 5MB each)</p>
+                                <input 
+                                    type="file" 
+                                    multiple 
+                                    accept="image/*" 
+                                    className="hidden" 
+                                    ref={fileInputRef} 
+                                    onChange={handleFileInputChange}
+                                />
                             </div>
-                        )}
 
-                        <div>
-                            <label htmlFor="vrTourUrl" className="block text-sm font-medium text-slate-700 dark:text-slate-200">Virtual Tour URL</label>
-                            <input type="text" name="vrTourUrl" value={property.vrTourUrl || ''} onChange={handleChange} placeholder="https://youtube.com/embed/..." className="mt-1 w-full input"/>
+                            {property.images.length > 0 && (
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-4">
+                                    {property.images.map((img, index) => (
+                                        <div 
+                                            key={index} 
+                                            draggable
+                                            onDragStart={(e) => handleImageDragStart(e, index)}
+                                            onDragOver={(e) => handleImageDragOver(e, index)}
+                                            onDrop={(e) => handleImageDrop(e, index)}
+                                            className="relative aspect-square group rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 cursor-move shadow-sm hover:shadow-md transition-all"
+                                        >
+                                            <img src={img} alt={`Uploaded ${index}`} className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
+                                                <button 
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); removeImage(index); }}
+                                                    className="bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 scale-75 group-hover:scale-100"
+                                                    title="Remove image"
+                                                >
+                                                    <TrashIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                            {index === 0 && (
+                                                <div className="absolute top-1 left-1 bg-brand-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                                                    COVER
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="pt-2">
+                                <label htmlFor="vrTourUrl" className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">Virtual Tour URL (Optional)</label>
+                                <input 
+                                    type="text" 
+                                    name="vrTourUrl" 
+                                    id="vrTourUrl"
+                                    value={property.vrTourUrl || ''} 
+                                    onChange={handleChange} 
+                                    placeholder="e.g. https://my.matterport.com/show/?m=..." 
+                                    className="w-full input-field"
+                                />
+                            </div>
                         </div>
                     </div>
 
                     
                     {/* Amenities */}
-                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Amenities</label>
-                        <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-2 border border-slate-200 dark:border-slate-700 rounded-md">
+                     <div className="space-y-4">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 pb-2">Amenities & Features</h3>
+                        <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-3 max-h-56 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-xl custom-scrollbar">
                             {ALL_AMENITIES.map(amenity => (
-                                <label key={amenity} className="flex items-center space-x-2 text-sm">
-                                    <input type="checkbox" checked={property.amenities.includes(amenity)} onChange={() => handleAmenityChange(amenity)} className="h-4 w-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"/>
-                                    <span className="text-slate-700 dark:text-slate-200">{amenity}</span>
+                                <label key={amenity} className="flex items-center space-x-3 text-sm cursor-pointer group">
+                                    <div className="relative flex items-center">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={property.amenities.includes(amenity)} 
+                                            onChange={() => handleAmenityChange(amenity)} 
+                                            className="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-brand-primary focus:ring-brand-primary bg-white dark:bg-slate-700 transition-all cursor-pointer"
+                                        />
+                                    </div>
+                                    <span className="text-slate-700 dark:text-slate-200 group-hover:text-brand-primary transition-colors">{amenity}</span>
                                 </label>
                             ))}
                         </div>
                     </div>
                 </div>
                 
-                 <footer className="bg-slate-50 dark:bg-slate-800 p-4 rounded-b-xl flex justify-end sticky bottom-0">
-                    <div className="flex space-x-3">
-                         <button type="button" onClick={onClose} className="bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-5 py-2.5 rounded-lg font-semibold border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
-                         <button type="submit" className="bg-brand-primary text-brand-gold border-2 border-brand-gold px-5 py-2.5 rounded-lg font-bold hover:bg-brand-gold hover:text-brand-dark transition-all shadow-xl uppercase tracking-widest text-xs">Publish Listing</button>
+                 <footer className="bg-white dark:bg-slate-900 p-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 sticky bottom-0 z-10">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                        * Required fields must be completed before publishing.
+                    </p>
+                    <div className="flex space-x-3 w-full sm:w-auto">
+                         <button 
+                            type="button" 
+                            onClick={onClose} 
+                            className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-transparent"
+                        >
+                            Cancel
+                        </button>
+                         <button 
+                            type="submit" 
+                            className="flex-1 sm:flex-none px-8 py-2.5 rounded-xl font-bold text-sm text-white bg-brand-primary hover:bg-brand-primary/90 transition-all shadow-lg shadow-brand-primary/20 uppercase tracking-wider"
+                        >
+                            {propertyToEdit ? 'Update Listing' : 'Publish Listing'}
+                        </button>
                     </div>
                 </footer>
             </form>
         </div>
         <style>{`
-            .input {
-                @apply px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-brand-gold focus:border-brand-gold;
+            .input-field {
+                @apply px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all outline-none;
+            }
+            .input-field:focus {
+                @apply border-brand-primary ring-2 ring-brand-primary/20 bg-white dark:bg-slate-800;
+            }
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 6px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+                @apply bg-transparent;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                @apply bg-slate-200 dark:bg-slate-700 rounded-full;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                @apply bg-slate-300 dark:bg-slate-600;
             }
             @keyframes fadeInScale {
-                from { opacity: 0; transform: scale(0.95); }
-                to { opacity: 1; transform: scale(1); }
+                from { opacity: 0; transform: scale(0.98) translateY(10px); }
+                to { opacity: 1; transform: scale(1) translateY(0); }
             }
             .animate-fade-in-scale {
-                animation: fadeInScale 0.3s ease-out forwards;
+                animation: fadeInScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             }
         `}</style>
     </div>
