@@ -37,7 +37,41 @@ const UserDashboard: React.FC<UserDashboardProps> = (props) => {
     const { user, tourRequests, savedSearches, messages, onRunSearch, onDeleteSearch, onProfileUpdate } = props;
     const [activeTab, setActiveTab] = useState<UserDashboardTab>('tours');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [sidebarWidth, setSidebarWidth] = useState(256); // Default 256px (w-64)
+    const [isResizing, setIsResizing] = useState(false);
     const { t } = useTranslations();
+
+    const startResizing = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+    };
+
+    const stopResizing = () => {
+        setIsResizing(false);
+    };
+
+    const resize = (e: MouseEvent) => {
+        if (isResizing) {
+            const newWidth = e.clientX;
+            if (newWidth >= 160 && newWidth <= 480) {
+                setSidebarWidth(newWidth);
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (isResizing) {
+            window.addEventListener('mousemove', resize);
+            window.addEventListener('mouseup', stopResizing);
+        } else {
+            window.removeEventListener('mousemove', resize);
+            window.removeEventListener('mouseup', stopResizing);
+        }
+        return () => {
+            window.removeEventListener('mousemove', resize);
+            window.removeEventListener('mouseup', stopResizing);
+        };
+    }, [isResizing]);
 
     const groupedMessages = useMemo(() => {
         return messages.reduce((acc: Record<string, Message[]>, msg) => {
@@ -64,12 +98,15 @@ const UserDashboard: React.FC<UserDashboardProps> = (props) => {
             </button>
         </div>
 
-      <div className={`
-            absolute lg:relative top-0 left-0 h-full z-10 transition-transform transform 
+      <div 
+        style={{ width: isSidebarOpen ? '100%' : `${sidebarWidth}px` }}
+        className={`
+            absolute lg:relative top-0 left-0 h-full z-10 transition-all duration-200
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-            lg:translate-x-0
-        `}>
-        <nav className="w-64 p-5 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-y-auto h-full flex-shrink-0">
+            lg:translate-x-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700
+        `}
+      >
+        <nav className="w-full p-5 overflow-y-auto h-full flex-shrink-0">
             <div className="flex items-center gap-3 mb-6">
                 <img src={user.profilePicture || `https://i.pravatar.cc/150?u=${user.username}`} alt="Profile" className="w-10 h-10 rounded-full object-cover"/>
                 <div>
@@ -91,6 +128,12 @@ const UserDashboard: React.FC<UserDashboardProps> = (props) => {
                 <DashboardTab id="payments" label="Payments & Billing" icon={BanknotesIcon} activeTab={activeTab} setActiveTab={handleTabClick} />
             </ul>
         </nav>
+        
+        {/* Resizer Handle */}
+        <div 
+            onMouseDown={startResizing}
+            className="hidden lg:block absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-brand-primary/30 transition-colors z-20"
+        />
       </div>
       <main className="flex-1 p-6 bg-slate-50 dark:bg-slate-800/50 overflow-y-auto lg:pt-6 pt-[70px]">
         {activeTab === 'tours' && <TourRequestsView tourRequests={tourRequests} />}

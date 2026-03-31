@@ -13,6 +13,8 @@ import InvestorGlobalMarketplace from './investor/InvestorGlobalMarketplace';
 import { InvestorCommunity } from './investor/InvestorCommunity';
 import InvestorSettingsPage from './investor/InvestorSettings';
 import { ChartBarIcon, DocumentTextIcon, ChatBubbleLeftRightIcon } from '../icons/ActionIcons';
+import { CreditCardIcon } from '../icons/AgentDashboardIcons';
+import SubscriptionManagement from './common/SubscriptionManagement';
 import InvestorReturns from './investor/InvestorReturns';
 import InvestorDocuments from './investor/InvestorDocuments';
 import InvestorMessages from './investor/InvestorMessages';
@@ -44,9 +46,16 @@ interface InvestorDashboardProps {
   onToggleCompare: (property: Property) => void;
 }
 
-type InvestorView = 'dashboard' | 'portfolio' | 'discovery' | 'tools' | 'marketplace' | 'community' | 'settings' | 'returns' | 'documents' | 'messages';
+type InvestorView = 'dashboard' | 'portfolio' | 'discovery' | 'tools' | 'marketplace' | 'community' | 'settings' | 'returns' | 'documents' | 'messages' | 'subscription';
 
-const Sidebar: React.FC<{ activeView: InvestorView; setActiveView: (view: InvestorView) => void; closeSidebar: () => void; }> = ({ activeView, setActiveView, closeSidebar }) => {
+const Sidebar: React.FC<{ 
+    activeView: InvestorView; 
+    setActiveView: (view: InvestorView) => void; 
+    closeSidebar: () => void; 
+    width: number;
+    startResizing: (e: React.MouseEvent) => void;
+    isSidebarOpen: boolean;
+}> = ({ activeView, setActiveView, closeSidebar, width, startResizing, isSidebarOpen }) => {
     const navItems = [
         { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
         { id: 'portfolio', label: 'My Investments', icon: PortfolioIcon },
@@ -59,6 +68,7 @@ const Sidebar: React.FC<{ activeView: InvestorView; setActiveView: (view: Invest
 
     const bottomNavItems = [
         { id: 'messages', label: 'Developer Messages', icon: ChatBubbleLeftRightIcon },
+        { id: 'subscription', label: 'Subscription & Billing', icon: CreditCardIcon },
         { id: 'community', label: 'Community & Networking', icon: CommunityIcon },
         { id: 'settings', label: 'Settings', icon: SettingsIcon }
     ] as const;
@@ -69,7 +79,10 @@ const Sidebar: React.FC<{ activeView: InvestorView; setActiveView: (view: Invest
     };
 
     return (
-        <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col p-4 flex-shrink-0 h-full">
+        <aside 
+            style={{ width: isSidebarOpen ? '100%' : `${width}px` }}
+            className="relative bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col p-4 flex-shrink-0 h-full"
+        >
             <div className="flex-grow">
                  <h3 className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500 mb-4 px-3">INVESTOR TOOLS</h3>
                 <nav className="flex flex-col space-y-1">
@@ -97,6 +110,12 @@ const Sidebar: React.FC<{ activeView: InvestorView; setActiveView: (view: Invest
                     </button>
                  ))}
             </div>
+
+            {/* Resizer Handle */}
+            <div 
+                onMouseDown={startResizing}
+                className="hidden lg:block absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-brand-primary/30 transition-colors z-20"
+            />
         </aside>
     );
 };
@@ -105,6 +124,40 @@ const Sidebar: React.FC<{ activeView: InvestorView; setActiveView: (view: Invest
 const InvestorDashboard: React.FC<InvestorDashboardProps> = (props) => {
     const [activeView, setActiveView] = useState<InvestorView>('dashboard');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [sidebarWidth, setSidebarWidth] = useState(256);
+    const [isResizing, setIsResizing] = useState(false);
+
+    const startResizing = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+    };
+
+    const stopResizing = () => {
+        setIsResizing(false);
+    };
+
+    const resize = (e: MouseEvent) => {
+        if (isResizing) {
+            const newWidth = e.clientX;
+            if (newWidth >= 160 && newWidth <= 480) {
+                setSidebarWidth(newWidth);
+            }
+        }
+    };
+
+    React.useEffect(() => {
+        if (isResizing) {
+            window.addEventListener('mousemove', resize);
+            window.addEventListener('mouseup', stopResizing);
+        } else {
+            window.removeEventListener('mousemove', resize);
+            window.removeEventListener('mouseup', stopResizing);
+        }
+        return () => {
+            window.removeEventListener('mousemove', resize);
+            window.removeEventListener('mouseup', stopResizing);
+        };
+    }, [isResizing]);
 
     const renderContent = () => {
         switch(activeView) {
@@ -126,6 +179,16 @@ const InvestorDashboard: React.FC<InvestorDashboardProps> = (props) => {
                 return <InvestorMessages {...props} />;
             case 'community':
                 return <InvestorCommunity {...props} />;
+            case 'subscription':
+                return (
+                    <div className="p-8">
+                        <div className="mb-8">
+                            <h2 className="text-3xl font-bold text-slate-800 dark:text-white">Subscription & Billing</h2>
+                            <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your investor plan and billing records.</p>
+                        </div>
+                        <SubscriptionManagement user={props.user} />
+                    </div>
+                );
             case 'settings':
                 return <InvestorSettingsPage settings={props.investorSettings} onUpdateSettings={props.onUpdateInvestorSettings} user={props.user} />;
             default:
@@ -144,12 +207,22 @@ const InvestorDashboard: React.FC<InvestorDashboardProps> = (props) => {
         </div>
 
         {/* Sidebar */}
-        <div className={`
-            absolute lg:relative top-0 left-0 h-full z-10 transition-transform transform 
-            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-            lg:translate-x-0
-        `}>
-            <Sidebar activeView={activeView} setActiveView={setActiveView} closeSidebar={() => setIsSidebarOpen(false)} />
+        <div 
+            style={{ width: isSidebarOpen ? '100%' : `${sidebarWidth}px` }}
+            className={`
+                absolute lg:relative top-0 left-0 h-full z-10 transition-all duration-200
+                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+                lg:translate-x-0
+            `}
+        >
+            <Sidebar 
+                activeView={activeView} 
+                setActiveView={setActiveView} 
+                closeSidebar={() => setIsSidebarOpen(false)} 
+                width={sidebarWidth}
+                startResizing={startResizing}
+                isSidebarOpen={isSidebarOpen}
+            />
         </div>
 
         <main className="flex-1 bg-slate-50 dark:bg-slate-800/50 overflow-y-auto lg:pt-0 pt-[65px]">

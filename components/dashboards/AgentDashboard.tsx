@@ -16,6 +16,7 @@ import AgentEarnings from './agent/AgentEarnings';
 import AgentBilling from './agent/AgentBilling';
 import { ChatBubbleLeftRightIcon } from '../icons/ActionIcons';
 import AgentMessages from './agent/AgentMessages';
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
 
 interface AgentDashboardProps {
@@ -45,7 +46,14 @@ interface AgentDashboardProps {
 
 type AgentView = 'dashboard' | 'listings' | 'leads' | 'analytics' | 'calendar' | 'profile' | 'support' | 'aiTools' | 'teamHub' | 'investmentRequests' | 'earnings' | 'billing' | 'messages';
 
-const Sidebar: React.FC<{ activeView: AgentView; setActiveView: (view: AgentView) => void; }> = ({ activeView, setActiveView }) => {
+const Sidebar: React.FC<{ 
+    activeView: AgentView; 
+    setActiveView: (view: AgentView) => void; 
+    width: number;
+    startResizing: (e: React.MouseEvent) => void;
+    isSidebarOpen: boolean;
+    closeSidebar: () => void;
+}> = ({ activeView, setActiveView, width, startResizing, isSidebarOpen, closeSidebar }) => {
     const navItems = [
         { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
         { id: 'listings', label: 'Listings', icon: ListingsIcon },
@@ -65,16 +73,23 @@ const Sidebar: React.FC<{ activeView: AgentView; setActiveView: (view: AgentView
         { id: 'support', label: 'Support & Resources', icon: SupportIcon }
     ] as const;
 
+    const handleItemClick = (view: AgentView) => {
+        setActiveView(view);
+        closeSidebar();
+    };
 
     return (
-        <aside className="w-64 bg-white border-r border-slate-200 flex flex-col p-4 overflow-y-auto">
+        <aside 
+            style={{ width: isSidebarOpen ? '100%' : `${width}px` }}
+            className="relative bg-white border-r border-slate-200 flex flex-col p-4 overflow-y-auto flex-shrink-0 h-full"
+        >
             <div className="flex-grow">
                  <h3 className="text-xs font-semibold uppercase text-slate-400 mb-4 px-3">Agent Tools</h3>
                 <nav className="flex flex-col space-y-1">
                     {navItems.map(item => (
                         <button 
                             key={item.id}
-                            onClick={() => setActiveView(item.id)} 
+                            onClick={() => handleItemClick(item.id)} 
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-md font-semibold text-sm transition-colors ${activeView === item.id ? 'bg-brand-light text-brand-primary' : 'text-slate-600 hover:bg-slate-100'}`}
                         >
                             <item.icon className="w-5 h-5" />
@@ -87,7 +102,7 @@ const Sidebar: React.FC<{ activeView: AgentView; setActiveView: (view: AgentView
                  {bottomNavItems.map(item => (
                     <button 
                         key={item.id}
-                        onClick={() => setActiveView(item.id)} 
+                        onClick={() => handleItemClick(item.id)} 
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md font-semibold text-sm transition-colors ${activeView === item.id ? 'bg-brand-light text-brand-primary' : 'text-slate-600 hover:bg-slate-100'}`}
                     >
                         <item.icon className="w-5 h-5" />
@@ -95,6 +110,12 @@ const Sidebar: React.FC<{ activeView: AgentView; setActiveView: (view: AgentView
                     </button>
                  ))}
             </div>
+
+            {/* Resizer Handle */}
+            <div 
+                onMouseDown={startResizing}
+                className="hidden lg:block absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-brand-primary/30 transition-colors z-20"
+            />
         </aside>
     );
 };
@@ -102,6 +123,41 @@ const Sidebar: React.FC<{ activeView: AgentView; setActiveView: (view: AgentView
 
 const AgentDashboard: React.FC<AgentDashboardProps> = (props) => {
     const [activeView, setActiveView] = useState<AgentView>('dashboard');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [sidebarWidth, setSidebarWidth] = useState(256);
+    const [isResizing, setIsResizing] = useState(false);
+
+    const startResizing = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+    };
+
+    const stopResizing = () => {
+        setIsResizing(false);
+    };
+
+    const resize = (e: MouseEvent) => {
+        if (isResizing) {
+            const newWidth = e.clientX;
+            if (newWidth >= 160 && newWidth <= 480) {
+                setSidebarWidth(newWidth);
+            }
+        }
+    };
+
+    React.useEffect(() => {
+        if (isResizing) {
+            window.addEventListener('mousemove', resize);
+            window.addEventListener('mouseup', stopResizing);
+        } else {
+            window.removeEventListener('mousemove', resize);
+            window.removeEventListener('mouseup', stopResizing);
+        }
+        return () => {
+            window.removeEventListener('mousemove', resize);
+            window.removeEventListener('mouseup', stopResizing);
+        };
+    }, [isResizing]);
 
     const renderContent = () => {
         switch(activeView) {
@@ -138,9 +194,35 @@ const AgentDashboard: React.FC<AgentDashboardProps> = (props) => {
     }
 
     return (
-    <div className="flex h-full font-sans">
-      <Sidebar activeView={activeView} setActiveView={setActiveView} />
-      <main className="flex-1 bg-slate-50 overflow-y-auto">
+    <div className="flex h-full font-sans relative">
+      {/* Mobile Header */}
+      <div className="lg:hidden p-4 border-b border-slate-200 w-full flex justify-between items-center absolute top-0 left-0 bg-white/80 backdrop-blur-sm z-20">
+          <h3 className="font-semibold capitalize text-slate-800">{activeView}</h3>
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-slate-800">
+              {isSidebarOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
+          </button>
+      </div>
+
+      {/* Sidebar */}
+      <div 
+        style={{ width: isSidebarOpen ? '100%' : `${sidebarWidth}px` }}
+        className={`
+            absolute lg:relative top-0 left-0 h-full z-10 transition-all duration-200
+            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+            lg:translate-x-0
+        `}
+      >
+        <Sidebar 
+            activeView={activeView} 
+            setActiveView={setActiveView} 
+            width={sidebarWidth}
+            startResizing={startResizing}
+            isSidebarOpen={isSidebarOpen}
+            closeSidebar={() => setIsSidebarOpen(false)}
+        />
+      </div>
+
+      <main className="flex-1 bg-slate-50 overflow-y-auto lg:pt-0 pt-[65px]">
         {renderContent()}
       </main>
     </div>
