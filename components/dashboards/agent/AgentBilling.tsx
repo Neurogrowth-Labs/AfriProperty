@@ -2,6 +2,7 @@
 import React from 'react';
 import { CheckBadgeIcon, CpuChipIcon } from '../../icons/ActionIcons';
 import { User } from '../../../types';
+import SubscriptionManagement from '../common/SubscriptionManagement';
 
 interface AgentBillingProps {
     user: User;
@@ -97,6 +98,10 @@ const AgentBilling: React.FC<AgentBillingProps> = ({ user }) => {
                 </div>
             ))}
         </div>
+      </div>
+
+      <div className="mt-12">
+        <SubscriptionManagement user={user} />
       </div>
     </div>
   );
