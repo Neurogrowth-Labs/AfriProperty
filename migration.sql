@@ -312,3 +312,41 @@ BEGIN
         CREATE POLICY "Allow public read access to plan_prices" ON public.plan_prices FOR SELECT USING (true);
     END IF;
 END $$;
+
+-- 10. Create subscription_bills table
+CREATE TABLE IF NOT EXISTS public.subscription_bills (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    amount NUMERIC NOT NULL,
+    currency TEXT DEFAULT 'USD',
+    status TEXT DEFAULT 'pending', -- 'pending', 'paid', 'overdue'
+    billing_period_start TIMESTAMP WITH TIME ZONE,
+    billing_period_end TIMESTAMP WITH TIME ZONE,
+    due_date TIMESTAMP WITH TIME ZONE,
+    paid_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- 11. Create subscription_payment_methods table (if different from general payment methods)
+CREATE TABLE IF NOT EXISTS public.subscription_payment_methods (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    card_holder TEXT,
+    brand TEXT,
+    last_four TEXT,
+    expiry_month INTEGER,
+    expiry_year INTEGER,
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- 12. Enable RLS for new tables
+ALTER TABLE public.subscription_bills ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subscription_payment_methods ENABLE ROW LEVEL SECURITY;
+
+-- 13. RLS Policies for new tables
+DROP POLICY IF EXISTS "Allow all access to subscription_bills" ON public.subscription_bills;
+CREATE POLICY "Allow all access to subscription_bills" ON public.subscription_bills FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Allow all access to subscription_payment_methods" ON public.subscription_payment_methods;
+CREATE POLICY "Allow all access to subscription_payment_methods" ON public.subscription_payment_methods FOR ALL USING (true);
